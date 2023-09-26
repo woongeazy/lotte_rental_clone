@@ -7,6 +7,12 @@
 - 설계 (9.25)
 - 구현 (9.26~9.27)
 
+## 사용한 언어
++ HTML5
++ CSS3
++ Javascript/jQuery
++ Ajax
+
 # 미리보기
 ![클론미리보기](images/클론(설계).png)
 
