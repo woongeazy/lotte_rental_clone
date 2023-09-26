@@ -1,0 +1,196 @@
+.k-grid {
+    width: 1400px;
+    padding-top: 0px;
+    /* margin-bottom: 80px; */
+}
+
+.k-grid-system {
+    width: 1125px;
+    padding-top: 0px;
+    /* margin-bottom: 80px; */
+}
+
+.k-grid-system .k-grid {
+    width: 1125px;
+}
+
+.ly-size__default .k-grid {
+    width: 880px;
+    padding-top: 0px;
+    margin-bottom: 0px;
+}
+
+.ly-size__large .k-grid {
+    width: 1080px;
+    padding-top: 0px;
+    margin-bottom: 0px;
+}
+
+.grid {
+    width: 2000px;
+}
+
+.grid.myOA_k-grid01,
+.grid2.myOA_k-grid01 {
+    width: 3000px;
+}
+
+.grid.myOA_k-grid01.w1125 {
+    width: 1125px;
+}
+
+.grid.myOA_k-grid01.w1400 {
+    width: 1400px;
+}
+
+.grid.myOA_k-grid01.w1600 {
+    width: 1600px;
+}
+
+.grid.myOA_k-grid01.w2000 {
+    width: 2000px;
+}
+
+.grid.myOA_k-grid01.w2200 {
+    width: 2200px;
+}
+
+.grid.myOA_k-grid01.w2300 {
+    width: 2300px;
+}
+
+.grid.myOA_k-grid01.w2400 {
+    width: 2400px;
+}
+
+.grid.myOA_k-grid01.w2500 {
+    width: 2500px;
+}
+
+.k-widget {
+    border: 0;
+}
+
+.k-grid th {
+    padding: 0;
+    border-width: 0 0 0 0;
+    white-space: nowrap;
+    line-height: 56px;
+    text-align: center;
+}
+
+.k-grid td {
+    text-align: center;
+    padding: 1.2857rem 0.3571rem;
+    border-width: 0 0 0 0;
+    border-top: 1px #dbdbdb solid;
+    border-bottom: 1px #dbdbdb solid;
+}
+
+.k-grid td.btn-pd {
+    padding: 15px 0.3571rem 14px 0.3571rem;
+}
+
+.k-grid td.btn-pd2 {
+    padding: 0 0.3571rem 0 0.3571rem;
+}
+
+.k-grid td.form {
+    padding: 5px 0.3571rem 4px 0.3571rem;
+}
+
+.k-grid tr:hover {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+}
+
+.k-grid tr:hover td {
+    border-color: #ff404b;
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.k-grid .hover-black tr:hover td {
+    border-color: #313131 !important;
+    cursor: default;
+    background-color: #fff;
+}
+
+.k-grid tr.checked td {
+    border-color: #ff404b;
+}
+
+.k-grid td:first-child {
+    border-radius: 0.7143rem 0 0 0.7143rem;
+    border-left: 1px #dbdbdb solid;
+}
+
+.k-grid td:last-child {
+    border-radius: 0 0.7143rem 0.7143rem 0;
+    border-right: 1px #dbdbdb solid;
+}
+
+.k-grid-header-wrap {
+    border-width: 0 0 0 0;
+    height: 56px;
+}
+
+.k-grid-header {
+    background-color: transparent;
+    border-bottom-width: 0px
+}
+
+.k-grid-header table {
+    height: 56px;
+}
+
+.k-grid-header .k-header {
+    background-color: #ededed;
+}
+
+.k-grid-header .k-header:first-child {
+    border-radius: 11px 0 0 11px;
+}
+
+.k-grid-header .k-header:last-child {
+    border-radius: 0 11px 11px 0;
+}
+
+.k-grid-header .k-header>.k-link {
+    text-align: center;
+    height: 56px;
+    line-height: 56px;
+    margin: 0;
+    padding:0;
+}
+
+.k-grid-content table {
+    border-collapse: separate;
+    border-spacing: 0 1.4286rem;
+}
+
+.k-grid tr.k-alt {
+    background-color: rgba(0, 0, 0, .0);
+}
+
+.k-grid-content tr:last-child td {
+    border-bottom-width: 1px;
+}
+
+.k-grid table th .checkbox label  {
+    vertical-align: middle;
+    margin-bottom: 5px;
+}
+
+.k-grid table td .checkbox label,
+.k-grid table td .radio label {
+    vertical-align: middle;
+    margin-bottom: 2px;
+}
+
+.k-grid.pagenation .k-grid-content {
+    overflow-y: hidden;
+}
+
+.k-grid.pagenation .k-grid-header {
+    padding-right: 0 !important;
+}

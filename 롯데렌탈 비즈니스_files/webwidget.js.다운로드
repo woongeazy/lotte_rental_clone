@@ -1,0 +1,142 @@
+const fn_webwidget = {
+    clear : () => {
+        // Web Widget의 모든 양식을 지웁니다.
+        zE('webWidget', 'clear');
+    },
+    close : () => {
+        // 위젯이 열려 있으면 이 명령은 위젯을 닫고 실행기를 표시합니다.
+        zE('webWidget', 'close');
+    },
+    display : () => {
+        // 현재 위젯 표시를 가져옵니다. 활성화한 기능에 따라 이 명령은 helpCenter, chat, contactForm, talk, contactOptions, answerBot, 또는 hidden.
+        zE('webWidget:get', 'display');
+    },
+    hide : () => {
+        // 페이지에서 위젯의 모든 부분을 숨깁니다. 페이지 로드 전이나 후에 호출할 수 있습니다.
+        zE('webWidget', 'hide');
+    },
+    identify : (name, email, organization) => {
+        // Zendesk에 대한 최종 사용자를 식별합니다.
+        zE('webWidget', 'identify', {
+            name: name,
+            email: email,
+            organization: organization
+        });
+    },
+    logout : () => {
+        // 최종 사용자의 세션을 지웁니다.
+        zE('webWidget', 'logout');
+    },
+    open : () => {
+        // 위젯을 강제로 엽니다.
+        zE('webWidget', 'open');
+    },
+    prefill : (name, email, phone) => {
+        // Web Widget 내부의 양식에서 최종 사용자의 세부 정보를 미리 채웁니다.
+        zE('webWidget', 'prefill', {
+            name: {
+              value: name,
+              readOnly: true // optional
+            },
+            email: {
+              value: email,
+              readOnly: true // optional
+            },
+            phone: {
+              value: phone,
+              readOnly: true // optional
+            }
+          });
+    },
+    reset : () => {
+        // 위젯의 상태를 완전히 재설정합니다. 최종 사용자 경험을 보존하기 위해 이 API는 위젯이 최소화된 경우에만 작동합니다.
+        zE('webWidget', 'reset');
+    },
+    setLocale : (locale) => {
+        // 위젯 로케일을 설정합니다.
+        // 기본적으로 Web Widget은 웹 브라우저의 브라우저 헤더와 일치하는 언어로 최종 사용자에게 표시됩니다. 위젯이 웹사이트에서 특정 언어로 표시 zE('webWidget', 'setLocale', data<string>);되도록 하려면 언어를 지정하는 데 사용할 수 있습니다.
+        zE('webWidget', 'setLocale', locale);
+
+    },
+    show : () => {
+        // 위젯을 숨기기 전의 상태로 호스트 페이지에 표시합니다.
+        // 위젯은 페이지 로드 시 기본적으로 표시됩니다. hide를 사용하지 않는 한 위젯을 표시 하기 위해 show를 호출할 필요가 없습니다.
+        zE('webWidget', 'show');
+    },
+    toggle : () => {
+        // 위젯이 닫혀 있으면 열고 위젯이 열려 있으면 닫습니다.
+        zE('webWidget', 'toggle');
+    },
+    updatePath: (title, url) => {
+        // 제목을 현재 사용자의 페이지 제목으로 설정하고 URL을 사용자의 현재 URL로 설정하여 방문자 경로를 업데이트합니다.
+        // 참고 : 이 API는 채팅 내 경로도 업데이트합니다.
+        zE('webWidget', 'updatePath', {
+            title: title,
+            url: url
+        });
+    },
+    updateSettings: {
+        color : (themeColor) => {
+            console.log(`fn_webwidget.updateSettings.color('${themeColor}')`)
+            // Web Widget의 zESettings 를 업데이트합니다. 한 번에 여러 설정을 업데이트할 수 있습니다.
+            zE('webWidget', 'updateSettings', {
+                webWidget: {
+                    color: {
+                        theme: themeColor,
+                        launcher: themeColor, // This will also update the badge
+                        button: themeColor,
+                        resultLists: themeColor,
+                        header: themeColor,
+                        articleLinks: themeColor
+                    }
+                }
+            });
+        },
+        offset : () => {
+            const horizontal = $('input#horizontal').val();
+            const vertical = $('input#vertical').val();
+
+            if(horizontal == '' || vertical == '') {
+                alert('값을 입력 후 버튼을 클릭해주세요.');
+                return;
+            }
+
+            zE('webWidget', 'updateSettings', {
+                webWidget: {
+                    offset: {
+                        horizontal: horizontal,
+                        vertical: vertical,
+                        mobile: {
+                            horizontal: horizontal,
+                            vertical: vertical
+                        }
+                    },
+                }
+            });
+        }
+    }
+}
+
+window.onload = () => {
+    // on open
+    // 위젯이 열리면 콜백을 실행합니다.
+    zE('webWidget:on', 'open', function () {
+        console.log('The widget has been opened!');
+    });
+
+    // on close
+    // 위젯이 닫힐 때 콜백을 실행합니다.
+    zE('webWidget:on', 'close', function () {
+        console.log('The widget has been closed!');
+    });
+
+    // on userEvent
+    // 사용자 이벤트가 발생하면 콜백을 실행합니다. 
+    // 이는 타사 분석 도구를 위젯에 통합하고 Google Analytics로 전송된 이벤트를 필터링하는 유연한 방법으로 사용할 수 있습니다.
+    // 이 설정은 분석 설정 을 사용하여 사용자 이벤트 추적을 비활성화하는 경우에도 적용할 수 있습니다 .
+    zE('webWidget:on', 'userEvent', function (event) {
+        console.log(event.category, event.action, event.properties);
+        $('#userEvent').append(`${event.category}, ${event.action}, ${event.properties = ''} <br />`)
+    });
+
+}

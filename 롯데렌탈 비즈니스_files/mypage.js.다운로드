@@ -1,0 +1,129 @@
+"use strict";
+
+$(function () {
+    $('.date').daterangepicker({
+            autoUpdateInput: false,
+            singleDatePicker: true,
+            showDropdowns: false,
+            //년월 수동 설정 여부
+            autoApply: true,
+            //true 확인 취소버튼을 숨기고 날짜클릭시 자동적용
+            locale: {
+                // monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+                monthNames: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10","11", "12"],
+                daysOfWeek: ["일", "월", "화", "수", "목", "금", "토"],
+                format: "YYYY.MM.DD",
+                cancelLabel: '취소',
+                applyLabel: "확인"
+            }
+        },
+        function(){
+            if( typeof fnTimeChange == 'function' ) {
+                setTimeout(function(){
+                    fnTimeChange();
+                },100);
+            };
+        });
+    $('.date').on('apply.daterangepicker', function (ev, picker) {
+        $(this).val(picker.startDate.format('YYYY.MM.DD'));
+    });
+});
+$(function () {
+    $('.date2').daterangepicker({
+        autoUpdateInput: false,
+        singleDatePicker: true,
+        showDropdowns: false,
+        //년월 수동 설정 여부
+        autoApply: true,
+        //true 확인 취소버튼을 숨기고 날짜클릭시 자동적용
+        locale: {
+            // monthNames: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+            monthNames: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10","11", "12"],
+            daysOfWeek: ["일", "월", "화", "수", "목", "금", "토"],
+            format: "YYYY.MM",
+            cancelLabel: '취소',
+            applyLabel: "확인"
+        }
+    });
+    $('.date2').on('apply.daterangepicker', function (ev, picker) {
+        $(this).val(picker.startDate.format('YYYY.MM'));
+    });
+});
+
+// 마이페이지 네비게이션
+$(document).ready(function () {
+
+    $(document).on('mouseover', '.depth1_list', function () {
+        $(this).addClass('on');
+        if ($(this).hasClass('rightMenu')) {
+            $(this).children('.depth2_wrap').addClass('rightAlign');
+        }
+
+        const target = $(this);
+        let offsetX = $(".depth1").eq(0).offset().left;
+        // let depth2H = target.find('.depth2').height();
+
+        // if (depth2H > 136) {
+        //     $(this).children('.depth2_wrap').css({ "height": "136", "bottom": "-135px" });
+
+
+        // }
+
+        if ($(this).hasClass('centerMenu')) {
+            offsetX = target.offset().left;
+        }
+
+        target.find('.depth2').css({
+            left: offsetX
+        });
+    });
+
+
+    $(document).on('mouseleave', '.depth1_list', function () {
+        $(this).removeClass('on');
+    })
+
+
+    //allMenu
+    // $('.btn_all_menu').on('click', function (e) {
+    //     e.preventDefault();
+    //     if ($(this).hasClass('on')) {
+    //         $(this).removeClass('on');
+    //         $('.header').removeClass('active');
+    //         $('body').removeClass('active');
+
+    //     } else {
+    //         $(this).addClass('on');
+    //         $('.header').addClass('active');
+    //         $('body').addClass('active');
+    //     }
+    // });
+
+    // dropdown_more
+    $('.btn_more').on('click', function () {
+        if ($(this).parent().hasClass('on')) {
+            $('.dropdown_more_wrap').removeClass('on');
+        } else {
+            $(this).parent().addClass('on');
+        }
+    });
+
+});
+
+
+$(document).ready(function () {
+    var pos = 0;
+    var li_width = 190;
+    var totalWidth = $(".slider_con li").width() * $(".slider_con li").length;
+    $(".slider_con ul").width(totalWidth)
+    $(".right").click(function () {
+        if (pos == totalWidth - 569) { return false; }
+        pos += li_width;
+        $(".slider_con").animate({ scrollLeft: pos }, 400);
+    });
+    $(".left").click(function () {
+        if (pos == 0) { return false; }
+        pos -= li_width;
+        $(".slider_con").animate({ scrollLeft: pos }, 400);
+    });
+});

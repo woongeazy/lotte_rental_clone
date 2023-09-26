@@ -1,0 +1,839 @@
+/* ================================ 모든 페이지 ================================ */
+
+/* 모든 페이지 공통 및 일반 페이지 로드 시*/
+
+var _dl = {
+	pageInfo: {
+		page_name_L1 : '', //페이지명 Depth 1
+		page_name_L2 : '', //페이지명 Depth 2
+		page_name_L3 : '', //페이지명 Depth 3
+		page_name_L4 : '', //페이지명 Depth 4
+		page_name_L5 : '', //페이지명 Depth 5
+		page_name : '', //풀페이지명
+		page_url : '', //발생 URL
+		page_template : '', // 페이지 템플릿 (Moible / Tablet / PC)
+		login_status : '' // 예시) 비로그인 : N | 로그인 : Y
+	},
+	userInfo: {
+		corporate_status : '', //비즈니스사이트메인 > 우측상단 로그인 > 마이페이지 > 좌측 법인정보관리 클릭 > 법인정보 확인 시 : Y, 확인 안될 시  : N
+		login_type : '', //예시) 일반 로그인 | 비회원 로그인 | 간편로그인_네이버,페이스북,카카오 | fingerprint | faceid(apple)
+		user_depth_1 : '', //예시) 롯데렌터카 | OA | 기타 | 개인    // 계약전 법인 담당자 분류값은 태깅에서 제외 (상혁 합의 완료)
+		user_depth_2 : '', //1depth 기준으로 2depth 리스트 참고, 예시) 기타 > 법인 기타 담당자(법인관리자), 법인 임직원
+		user_id : '', //예시) 12345678(kunnr) G5고객코드
+		corporate_name :'', //예시)롯데렌탈
+		business_number :'' //예시)2148779183
+	},
+	page_event: {
+		login: false //로그인 완료 시 추가
+	}
+}
+//221222 PageName추가
+function adobeSetPageName() {
+
+	var pageNameL1 = '';
+	var pageNameL2 = '';
+	var pageNameL3 = '';
+	var pageNameL4 = '';
+	var pageNameL5 = '';
+	var pageName = [];
+	var pathName = [];
+
+	for (i=0; i<4; i++) {
+
+		pathName[i] = window.location.pathname.split('/')[i+1];
+
+		if (pathName[i] == null) {
+
+			pathName = pathName.filter((element) => {return element != null;});
+
+			break;
+
+		}
+
+	}
+
+	//console.log("split_path_name: "+pathName);
+
+	if (pathName[0] == 'login.do') {
+
+		pageNameL1 = '로그인';
+
+	} else if (pathName[0] == 'HeaderSearch.do') {
+
+		pageNameL1 = '상품검색';
+
+	} else if (pathName[0] == 'mypageContractGuide.do') {
+
+		pageNameL1 = '계약관리서비스';
+
+	} else if (pathName[0] == 'main.do') {
+
+		pageNameL1 = '비즈니스';
+		pageNameL2 = '메인';
+
+	} else {
+
+		pageNameL1 = '비즈니스';
+
+	}
+
+	if (pathName[0] == 'mic') {
+
+		if (pathName[1] == 'lottrental') {
+
+			pageNameL2 = '롯데렌터카';
+
+			if (pathName[2] == 'businessAreas.do') {
+
+				pageNameL3 = '사업분야';
+
+			} else if (pathName[2] == 'fmsServiceInfo.do') {
+
+				pageNameL3 = 'FMS서비스안내';
+
+			} else if (pathName[2] == 'productIntroduce.do') {
+
+				pageNameL3 = '상품소개';
+
+			} else if (pathName[2] == 'productIntroceDetail.do') {
+
+				pageNameL3 = '상품소개';
+				pageNameL4 = '상품상세';
+
+			}
+
+		} else if (pathName[1] == 'oa') {
+
+			pageNameL2 = 'OA기기';
+
+			if (pathName[2] == 'businessAreas.do') {
+
+				pageNameL3 = '사업분야';
+
+			} else if (pathName[2] == 'oaServiceInfo.do') {
+
+				pageNameL3 = 'OA매니저안내';
+
+			} else if (pathName[2] == 'productIntroduce.do') {
+
+				pageNameL3 = '상품소개';
+
+			} else if (pathName[2] == 'productIntroceDetail.do') {
+
+				pageNameL3 = '상품소개';
+				pageNameL4 = '상품상세';
+
+			}
+
+		} else if (pathName[1] == 'construction') {
+
+			pageNameL2 = '건설장비';
+
+			if (pathName[2] == 'businessAreas.do') {
+
+				pageNameL3 = '사업분야';
+
+			} else if (pathName[2] == 'productIntroduce.do') {
+
+				pageNameL3 = '상품소개';
+
+			} else if (pathName[2] == 'productIntroceDetail.do') {
+
+				pageNameL3 = '상품소개';
+				pageNameL4 = '상품상세';
+
+			}
+
+		} else if (pathName[1] == 'measuring') {
+
+			pageNameL2 = '측정기';
+
+			if (pathName[2] == 'businessAreas.do') {
+
+				pageNameL3 = '사업분야';
+
+			} else if (pathName[2] == 'productIntroduce.do') {
+
+				pageNameL3 = '상품소개';
+
+			} else if (pathName[2] == 'productIntroceDetail.do') {
+
+				pageNameL3 = '상품소개';
+				pageNameL4 = '상품상세';
+
+			}
+
+		} else if (pathName[1] == 'nomal') {
+
+			pageNameL2 = '무인화/일반/레저장비';
+
+			if (pathName[2] == 'businessAreas.do') {
+
+				pageNameL3 = '사업분야';
+
+			} else if (pathName[2] == 'productIntroduce.do') {
+
+				pageNameL3 = '상품소개';
+
+			} else if (pathName[2] == 'productIntroceDetail.do') {
+
+				pageNameL3 = '상품소개';
+				pageNameL4 = '상품상세';
+
+			}
+
+		} else if (pathName[1] == 'estimate') {
+
+			if (pathName[2] == 'Inquiry.do') {
+
+				pageNameL2 = '견적문의';
+				pageNameL3 = '바로견적문의';
+
+			} else if (pathName[2] == 'InquiryComplete.do') {
+
+				pageNameL2 = '견적문의';
+				pageNameL3 = '바로견적문의';
+				pageNameL3 = '상세견적문의완료';
+
+			} else if (pathName[2] == 'usedAssetsInquiry.do') {
+
+				pageNameL2 = '견적문의';
+				pageNameL3 = '중고자산매각문의';
+
+			} else if (pathName[2] == 'InquiryComplete.do') {
+
+				pageNameL2 = '견적문의';
+				pageNameL3 = '중고자산매각문의';
+				pageNameL3 = '중고자산매각문의완료';
+
+			} else if (pathName[2] == 'quotation.do') {
+
+				pageNameL2 = '마이페이지';
+				pageNameL3 = '견적조회';
+
+			} else if (pathName[2] == 'estimation.do') {
+
+				pageNameL2 = '마이페이지';
+				pageNameL3 = '견적조회';
+				pageNameL3 = '견적서검색';
+
+			}
+
+		} else if (pathName[1] == 'inquiryResult') {
+
+			pageNameL2 = '견적문의';
+			pageNameL3 = '바로견적문의';
+			pageNameL4 = '빠른견적문의완료';
+
+		} else if (pathName[1] == 'recent') {
+
+			pageNameL2 = '최근본상품';
+
+		}
+
+	} else if (pathName[0] == 'voc') {
+
+		pageNameL2 = '고객센터';
+
+		if (pathName[1] == 'faq.do') {
+
+			pageNameL3 = 'FAQ';
+
+		} else if (pathName[1] == 'asGuide.do') {
+
+			pageNameL3 = 'AS안내';
+
+		} else if (pathName[1] == 'notice.do') {
+
+			pageNameL3 = '공지사항';
+
+		} else if (pathName[1] == 'noticeDetail.do') {
+
+			pageNameL3 = '공지사항';
+			pageNameL4 = '공지사항상세';
+
+		} else if (pathName[1] == 'specialExbibition.do') {
+
+			pageNameL3 = '기획전/이벤트';
+
+		} else if (pathName[1] == 'specialExbibitionDetail.do') {
+
+			pageNameL3 = '기획전/이벤트';
+			pageNameL4 = '기획전/이벤트상세';
+
+		} else if (pathName[1] == 'businessProposal.do') {
+
+			pageNameL3 = '비즈니스/상품제안';
+
+		} else if (pathName[1] == 'businessProposalDetail.do') {
+
+			pageNameL3 = '비즈니스/상품제안';
+			pageNameL3 = '비즈니스/상품제안상세';
+
+		} else if (pathName[1] == 'manual.do') {
+
+			pageNameL3 = '매뉴얼/소프트웨어지원';
+
+		}
+
+	} else if (pathName[0] == 'mypage') {
+
+		pageNameL2 = '마이페이지';
+
+		if (pathName[1] == 'bim') {
+
+			pageNameL3 = '기본정보관리';
+
+			if (pathName[2] == 'infoBasic.do') {
+
+				pageNameL4 = '개인정보관리';
+
+			} else if (pathName[2] == 'corpInfo.do') {
+
+				pageNameL4 = '법인정보관리';
+
+			} else if (pathName[2] == 'corpInfoPrivacy.do') {
+
+				pageNameL4 = '법인정보관리';
+				pageNameL5 = '법인정보수정';
+
+			} else if (pathName[2] == 'contractCheck.do') {
+
+				pageNameL4 = '법인정보관리';
+				pageNameL5 = '계약인증';
+
+			} else if (pathName[3] == 'memberList.do') {
+
+				pageNameL4 = '법인정보관리';
+				pageNameL5 = '임직원관리';
+
+			} else if (pathName[3] == 'memberApproveList.do') {
+
+				pageNameL4 = '법인정보관리';
+				pageNameL5 = '임직원가입승인';
+
+			}
+
+		} else if (pathName[1] == 'contract') {
+
+			pageNameL3 = '계약/청구/납입관리';
+
+			if (pathName[2] == 'rentalcar') {
+
+				pageNameL4 = '롯데렌터카';
+
+				if (pathName[3] == 'contractMng.do') {
+
+					pageNameL5 = '계약관리';
+
+				} else if (pathName[3] == 'customerMng.do') {
+
+					pageNameL5 = '고객부담금내역';
+
+				} else if (pathName[3] == 'penalty.do') {
+
+					pageNameL5 = '과태료발생내역';
+
+				} else if (pathName[3] == 'billPayment.do') {
+
+					pageNameL5 = '청구납입내역';
+
+				} else if (pathName[3] == 'paymentResult.do') {
+
+					pageNameL5 = '납부결과';
+
+				} else if (pathName[3] == 'insuranceTerms.do') {
+
+					pageNameL5 = '보험조건변경신청';
+
+				} else if (pathName[3] == 'certificatePublish.do') {
+
+					pageNameL5 = '증명서발행';
+
+				}
+
+			} else if (pathName[2] == 'oa') {
+
+				pageNameL4 = 'OA기기';
+
+			} else if (pathName[2] == 'etc') {
+
+				pageNameL4 = '기타';
+
+			}
+
+		} else if (pathName[1] == 'vmm') {
+
+			pageNameL3 = '차량정비';
+
+			if (pathName[2] == 'maintenanceReq.do') {
+
+				pageNameL4 = '고장정비신청';
+
+			} else if (pathName[2] == 'maintenanceHistory.do') {
+
+				pageNameL4 = '정비현황';
+
+			} else if (pathName[2] == 'replacingConsumables.do') {
+
+				pageNameL4 = '소모품관리';
+
+			}
+
+		} else if (pathName[1] == 'fms') {
+
+			pageNameL3 = '신차장법인차량관제';
+
+			if (pathName[2] == 'dashboard') {
+
+				pageNameL4 = '대시보드';
+
+			} else if (pathName[2] == 'reservation') {
+
+				pageNameL4 = '예약/배차';
+
+				if (pathName[3] == 'historyBasic.do') {
+
+					pageNameL5 = '예약/배차이력';
+
+				} else if (pathName[3] == 'vehiclefixingMng.do') {
+
+					pageNameL5 = '차량고정사용자관리';
+
+				} else if (pathName[3] == 'makeReservation.do') {
+
+					pageNameL5 = '예약하기';
+
+				} else if (pathName[3] == 'operationHistoryWrite.do') {
+
+					pageNameL5 = '운행내역수기작성';
+
+				} else if (pathName[3] == 'checkVehicleStatus.do') {
+
+					pageNameL5 = '차량별예약현황확인';
+
+				}
+
+			} else if (pathName[2] == 'operating') {
+
+				pageNameL4 = '운행/차량관제';
+
+				if (pathName[3] == 'realTimeStatusBasic.do') {
+
+					pageNameL5 = '실시간운행현황';
+
+				} else if (pathName[3] == 'drivingRoute.do') {
+
+					pageNameL5 = '운행경로이력';
+
+				} else if (pathName[3] == 'electricControl.do') {
+
+					pageNameL5 = '전기차량관제';
+
+				} else if (pathName[3] == 'uncontrolledStatus.do') {
+
+					pageNameL5 = '미관제차량현황';
+
+				} else if (pathName[3] == 'electricChargeHistory.do') {
+
+					pageNameL5 = '전기차충전이력';
+
+				}
+
+			} else if (pathName[2] == 'operatingAnalysis') {
+
+				pageNameL4 = '운행분석';
+
+				if (pathName[3] == 'synthesisReportBasic.do') {
+
+					pageNameL5 = '종합리포트';
+
+				} else if (pathName[3] == 'reservationUse.do') {
+
+					pageNameL5 = '예약사용상세조회';
+
+				} else if (pathName[3] == 'routeAndRemaingFuel.do') {
+
+					pageNameL5 = '운행경로및연료잔량 조회';
+
+				} else if (pathName[3] == 'dailyOperation.do') {
+
+					pageNameL5 = '일별운행내역조회';
+
+				} else if (pathName[3] == 'operationHistoryDetail.do') {
+
+					pageNameL5 = '운행내역상세조회';
+
+				} else if (pathName[3] == 'economicSafety.do') {
+
+					pageNameL5 = '경제운전';
+
+				} else if (pathName[3] == 'safeDriving.do') {
+
+					pageNameL5 = '안전운전';
+
+				} else if (pathName[3] == 'ntsDrivingRecord.do') {
+
+					pageNameL5 = '국세청용운행기록부';
+
+				}
+
+			} else if (pathName[2] == 'preferences') {
+
+				pageNameL4 = '환경설정';
+
+				if (pathName[3] == 'groupMng.do') {
+
+					pageNameL5 = '부서관리';
+
+				} else if (pathName[3] == 'corpPolicyRevosion.do') {
+
+					pageNameL5 = '법인정책관리';
+
+				} else if (pathName[3] == 'garageMng.do') {
+
+					pageNameL5 = '차고지관리';
+
+				} else if (pathName[3] == 'parkingMng.do') {
+
+					pageNameL5 = '주차장관리';
+
+				} else if (pathName[3] == 'vehicleMng.do') {
+
+					pageNameL5 = '차량관리';
+
+				} else if (pathName[3] == 'vehicleGroupMng.do') {
+
+					pageNameL5 = '차량권한그룹관리';
+
+				} else if (pathName[3] == 'economicSafetyMng.do') {
+
+					pageNameL5 = '경제안전운행관리';
+
+				} else if (pathName[3] == 'favoriteAreaSet.do') {
+
+					pageNameL5 = '즐겨찾는지역설정';
+
+				} else if (pathName[3] == 'cardMng.do') {
+
+					pageNameL5 = '카드관리';
+
+				}
+
+			}
+
+		} else if (pathName[1] == 'coupon') {
+
+			pageNameL3 = '쿠폰함';
+
+		} else if (pathName[1] == 'oamanager') {
+
+			pageNameL3 = 'OA매니저';
+
+		}
+
+	} else if (pathName[0] == 'private') {
+
+		if (pathName[1] == 'contract') {
+
+			pageNameL2 = '전자계약';
+
+		}
+
+	} else if (pathName[0] == 'sys') {
+
+		pageNameL2 = '시스템관리';
+
+		if (pathName[1] == 'content') {
+
+			pageNameL3 = '컨텐츠관리';
+
+		} else if (pathName[1] == 'product') {
+
+			pageNameL3 = '상품관리';
+
+		} else if (pathName[1] == 'voc') {
+
+			pageNameL3 = '고객지원';
+
+		} else if (pathName[1] == 'contract') {
+
+			pageNameL3 = '계약인증관리';
+
+		} else if (pathName[1] == 'log') {
+
+			pageNameL3 = '로그관리';
+
+		} else if (pathName[1] == 'performance') {
+
+			pageNameL3 = '실적지표관리';
+
+		} else if (pathName[1] == 'admin') {
+
+			pageNameL3 = '관리자관리';
+
+		} else if (pathName[1] == 'corp') {
+
+			pageNameL3 = '법인담당자관리';
+
+		} else if (pathName[1] == 'fms') {
+
+			pageNameL3 = 'FMS관리';
+
+		} else if (pathName[1] == 'oamanager') {
+
+			pageNameL3 = 'OA매니저관리';
+
+		} else if (pathName[1] == 'code') {
+
+			pageNameL3 = '코드관리';
+
+		}
+
+	}
+
+	//console.log("pagenameL1: "+pageNameL1);
+	//console.log("pagenameL2: "+pageNameL2);
+	//console.log("pagenameL3: "+pageNameL3);
+	//console.log("pagenameL4: "+pageNameL4);
+	//console.log("pagenameL5: "+pageNameL5);
+
+	_dl.pageInfo.page_name_L1 = pageNameL1;
+	_dl.pageInfo.page_name_L2 = pageNameL2;
+	_dl.pageInfo.page_name_L3 = pageNameL3;
+	_dl.pageInfo.page_name_L4 = pageNameL4;
+	_dl.pageInfo.page_name_L5 = pageNameL5;
+
+	for (i=1; i<6; i++) {
+
+		pageName[i-1] = eval('pageNameL'+i);
+
+	}
+
+	pageName = pageName.filter((element) => {return element != '';}).join('^');
+
+	//console.log("_dl.pageInfo.page_name: "+pageName);
+
+	_dl.pageInfo.page_name = pageName;
+
+}
+
+function adobeSetPageUrl() {
+
+	var pageUrl = window.document.location.href;
+
+	//console.log("_dl.pageInfo.page_url: "+pageUrl);
+
+	_dl.pageInfo.page_url = pageUrl;
+
+}
+
+function adobeGetCookie(name) {
+	var value = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+	return value ? unescape(value[2]) : null;
+};
+
+function adobeSetPageTemplate() {
+
+	var pageTemplate = '';
+
+	if (isMobile() == true) {
+
+		// App인경우, user_agnent / device_app
+		pageTemplate = adobeGetCookie('user_agent') == 'device_app' ? 'App' : 'Mobile';
+
+	} else {
+
+		pageTemplate = 'PC';
+
+	}
+
+	//console.log("_dl.pageInfo.page_template: "+pageTemplate);
+
+	_dl.pageInfo.page_template = pageTemplate;
+
+}
+
+//221215 수정
+function adobeSetLoginStatus(isLogin) {
+
+	var loginStatus = isLogin;
+
+	if (loginStatus == 'true') {
+
+		loginStatus = 'Y';
+
+		localStorage.setItem('aaLogin', String(Number(localStorage.getItem('aaLogin'))+1));
+
+		if (Number(localStorage.getItem('aaLogin')) == 1) {
+
+			_dl.page_event.login = true;
+
+		}
+
+	} else {
+
+		loginStatus = 'N';
+
+		localStorage.setItem('aaLogin', '0');
+
+	}
+
+	_dl.pageInfo.login_status = loginStatus;
+
+}
+
+function adobeSetCorporateStatus() {
+
+	var corporateStatus = '';
+	var businessNumber = _dl.userInfo.business_number;
+
+	//console.log("businessNumber: "+businessNumber);
+
+	if (businessNumber == null || businessNumber == '' || businessNumber == undefined) {
+
+		corporateStatus = 'N';
+
+	} else {
+
+		corporateStatus = 'Y';
+
+	}
+
+	//console.log("_dl.userInfo.corporate_status: "+corporateStatus);
+
+	_dl.userInfo.corporate_status = corporateStatus;
+
+}
+
+function adobeSetLoginType(userType) {
+
+	var loginType = '';
+	var loginStatus = _dl.pageInfo.login_status;
+	var userType = userType;
+	var kakaoToken = '';
+	var naverToken = localStorage.getItem('naverLogin.accessToken');
+	var facebookToken = localStorage.getItem('facebook.accessToken');
+	var appBioToken = localStorage.getItem('login_method'); // 2022.12.23 추가
+
+	//kakaoToken 검색
+	for (i = 0; i < localStorage.length; i++) {
+		if (localStorage.key(i).slice(0,6) == "kakao_") {
+			kakaoToken = localStorage.getItem(localStorage.key(i));
+			break;
+		}
+	}
+
+	if (userType == 'NON') {
+
+		loginType = '비회원 로그인';
+
+	} else {
+
+		if (loginStatus == 'Y') {
+
+			loginType = '통합 회원 로그인';
+
+			if (naverToken != null && naverToken != '' && naverToken != undefined) {
+
+				loginType = '간편로그인_naver';
+
+			}
+
+			if (facebookToken != null && facebookToken != '' && facebookToken != undefined) {
+
+				loginType = '간편로그인_facebook';
+
+			}
+
+			if (kakaoToken != null && kakaoToken != '' && kakaoToken != undefined) {
+
+				loginType = '간편로그인_kakao';
+
+			}
+
+			if (appBioToken != null && appBioToken != '' && appBioToken != undefined) {
+
+				loginType = appBioToken;
+
+			}
+
+		}
+
+	}
+
+	//console.log("_dl.userInfo.login_type: "+loginType);
+
+	_dl.userInfo.login_type = loginType;
+
+}
+
+function adobeSetUserDepth1(userType) {
+
+	var userDepth1 = '';
+	var userType = userType;
+
+	//console.log("userType: "+userType);
+
+	if (userType == 'PMB') {
+
+		userDepth1 = '개인';
+
+	} else if (userType.startsWith(userType, 'C')) {
+
+		userDepth1 = '롯데렌터카';
+
+	} else if (userType.startsWith(userType, 'O')) {
+
+		userDepth1 = 'OA';
+
+	} else if (userType.startsWith(userType, 'E')) {
+
+		userDepth1 = '기타';
+
+	}
+
+	//console.log("_dl.userInfo.user_depth_1: "+userDepth1);
+
+	_dl.userInfo.user_depth_1 = userDepth1;
+
+}
+
+function adobeSetUserDepth2(userTypeName) {
+
+	var userDepth2 = userTypeName;
+
+	//console.log("_dl.userInfo.user_depth_2: "+userDepth2);
+
+	_dl.userInfo.user_depth_2 = userDepth2;
+
+}
+
+function adobeSetUserId(seletedClientNo) {
+
+	var userId = seletedClientNo;
+
+	//console.log("_dl.userInfo.user_id: "+userId);
+
+	_dl.userInfo.user_id = userId;
+
+}
+//매개변수명오타수정필요
+function adobeSetCorporateName(seletedUserCorpName) {
+
+	var corporateName = seletedUserCorpName;
+
+	//console.log("_dl.userInfo.corporate_name: "+corporateName);
+
+	_dl.userInfo.corporate_name = corporateName;
+
+}
+
+function adobeSetBusinessNumber(selectedUserBizNo) {
+
+	var businessNumber = selectedUserBizNo;
+
+	//console.log("_dl.userInfo.business_number: "+businessNumber);
+
+	_dl.userInfo.business_number = businessNumber;
+}

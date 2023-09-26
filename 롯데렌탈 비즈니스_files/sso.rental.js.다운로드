@@ -1,0 +1,389 @@
+/**
+	sso api 사용관련 object
+*/
+var sso = sso || {};
+sso = (function(){
+	"use strict";
+
+	var _constMap = {
+		url: {
+			LOG_IN: '/exBiz/login/login_01_001'
+			, SSO_LOG_IN: '/exBiz/login/ssoLogin_01_001'
+			, AUTO_LOG_IN: '/exBiz/login/autoLogin_01_001'
+			, ONLINE_CNO: '/biz/login/urInfInq_01_001' //사용자정보 조회 (온라인고객번호)
+			, MEMBER_INFO: '/biz/login/urInfInq_01_002' //사용자정보 조회 (회원정보)
+			, CHK_JOIN_AVAIL: '/exBiz/join/geMbrJoin_02_001' //일반회원가입 가능여부 확인 (본인인증 후, 약관동의화면 전 노출해야됨)
+			, CHK_ID_DUP: '/exBiz/join/comMbrJoin_01_002' //아이디 중복확인
+			, CHK_MAIL_DUP: '/exBiz/join/comMbrJoin_01_003' //이메일 중복확인
+			, JOIN_MEMBER: '/exBiz/join/geMbrJoin_07_002' //일반회원 가입처리
+			, CHK_PASSPORT_DUP: '/exBiz/join/comMbrJoin_01_005' //여권번호 중복확인(외국인 회원가입)
+			, JOIN_MEMBER_BY_MAIL: '/exBiz/join/esyMbrJoin_13_001' //이메일인증회원 가입처리(내국인/외국인)
+			, SLEEP_CLEAR: '/exBiz/manage/dmcyRlsPc_01_001' //제휴사 휴면해제 처리
+			, DUAL_MEMBER_TERMS_AGREE: '/exBiz/join/geMbrJoin_04_002' //이중회원사 약관동의 처리
+			, UPDATE_MEMBER_INFO: '/biz/manage/mgUpdate_01_001' //회원정보 변경
+			, LEAVE_MEMBER: '/biz/manage/mbrSesPc_02_002' //제휴사 탈퇴처리
+		}
+		, exUrl: {
+			CHANGE_PASSWORD: "/view/manage/chPassword_01_000" // 비밀번호 변경
+			, FIND_PASSWORD: "/exView/manage/fdPassword_01_001" // 비밀번호 찾기
+			, FIND_ID: "/exView/manage/fdId_01_001" // 아이디 찾기
+			, JOIN_MEMBER: "/exView/join/mbrJoin_01_001" // 회원가입
+			, CHANGE_INFO: "/view/manage/mbrManage_01_000" // 회원 정보 변경
+			, SLEEP_CLEAR: "/exView/login/login_05_001" // 휴면 해제 처리
+			, INVALID_LOGIN_CLEAR : "/exView/login/login_03_001" // 부정로그인 해제
+			, LEAVE_MEMBER: "/view/manage/mbrSes_01_001" // 회원 탈퇴
+			, CONVERSION_MEMBER : "/exView/join/mbrJoin_21_001" // LPoint 회원 전환
+			, DUAL_MEMBER_TERMS_AGREE: "/exView/join/mbrJoin_04_001" // 이중제휴사 약관동의
+		}
+	}
+
+	var SSO = {
+		library: null
+		, acesTkn: ""
+		, channel: ""
+		, siteNo: ""
+		, clientAkInfo: ""
+		, data: {	// 사용자가 사용하고 싶은 변수
+
+		}
+		, init: function(data){
+			var _this = this;
+
+			if(_this.library != null) {	// 중복생성 불가
+				return;
+			}
+
+			sso.log('SSO channel', data.channel);
+			sso.log('SSO acesTkn', data.acesTkn);
+
+			_this.acesTkn = data.acesTkn;
+			_this.channel = data.channel || _this.channel;
+			_this.siteNo = data.ccoSiteNo || _this.siteNo;
+			_this.clientAkInfo = data.clntAkInf || _this.clientAkInfo;
+
+			if(!data.isLoggedIn) {
+				delete data.acesTkn;
+			}
+
+			var options = {
+				vrblNm: "sso.library()" // 라이브러리 변수명
+				, srnOpt: {		// 화면옵션
+					opMd: "0" // 오픈모드 0: redirect, 1: iframe, 2: popup
+					, srnHeaderExpsYn: "" // Y: 통합회원제화면 헤더 영역 노출, N:비노출
+				}
+			}
+
+			// 오토매니져 IOS 에서 SSO 라이브러리 사용 불가하여, 코드값 2>1 로 강제 사용처리  sj.kim
+			//options.urEvnmtDc = _this.channel;
+			options.urEvnmtDc = _this.channel == '2' ? '1' : _this.channel;
+
+			$.extend(true, options, data);
+			_this.library = new SsoClientLibrary(options);
+
+			// data object 에서 현재 세션여부 확인, 비로그인 상태라면 sso 로그인 체크 처리
+			if(!data.isLoggedIn && data.ssoLogin) {
+				_ssoLogin.execute(data.ssoLogin);
+			}
+		}
+		, reInit: function(option){
+			if(SSO.library != null) {
+				SSO.library._removeEventHandler();
+				SSO.library = null;
+			}
+
+			SSO.init(option);
+		}
+		, getToken: function(option){
+			option = option || {}
+			if(option.callback === undefined) {
+				option.callback = function(responseData) {
+					sso.log("ssoToken callback:", responseData);
+				}
+			}
+
+			SSO.library.getSsoTkn(option)
+		}
+		, serverApi: {
+			execute: function(data){
+				sso.log("serverApi:", data);
+				var url = data.url || "/lpoint/api/call.do";
+				// 사용 안함
+				/*
+				$.ajax({
+					type: "post",
+					url: url,
+					data: data.param,
+					success:function(responseData) {
+						if(typeof data.callback === "function") {
+							data.callback(responseData);
+						}
+					}, error:function( e ){
+					}
+				});
+				*/
+			}
+		}
+	}
+
+	var _login = {
+		api: function(option) {
+			var options = {
+				akUrl: _constMap.url.LOG_IN // 일반 로그인
+				, aftPcMd : '1'								// 후처리모드
+				, rturUrl: window.location.href				// 리턴URL
+				, rturUrlCaloMethd: "GET"					// 리턴URL호출메소드
+				, callback : function(responseData) {		// 콜백함수
+					sso.log("login callback:", responseData);
+
+					if ('00' == responseData.rspC) {
+						// 로그인 상태 변경 (성공)
+						// onl_cno 조회
+						// 로그인 상태 바꾸러 가기 (onl_cno, acesTkn 가지고..)
+					} else {
+						// 로그인 실패 처리
+					}
+				}
+			}
+
+			$.extend(true, options, option);
+			SSO.library.callLogin(options)
+		}
+		, socialLogin: function(option) {
+			var options = {
+				akUrl : _constMap.url.SOCIAL_LOG_IN,	// 소셜 로그인
+				aftPcMd : '1',							// 후처리모드
+				rturUrl : window.location.href,			// 리턴URL
+				rturUrlCaloMethd : "GET",				// 리턴URL호출메소드
+				callback : function(responseData) {		// 콜백함수
+					sso.log("social login callback:", responseData);
+					if ('00' == responseData.rspC) {
+						// 로그인 상태 변경 (성공)
+						// onl_cno 조회
+						// 로그인 상태 바꾸러 가기 (onl_cno, acesTkn 가지고..)
+					} else {
+						// 로그인 실패 처리
+					}
+				}
+			};
+
+			$.extend(true, options, option);
+			SSO.library.callLogin(options);
+		}
+	}
+
+	var _ssoLogin = {
+		api: function(option){
+			var options = {
+				aftPcMd: ''
+				, rturUrl: window.location.href
+				, rturUrlCaloMethd: 'GET'
+				, callback: function(responseData) {
+					sso.log("ssoLogin callback:", responseData);
+					if("00" == responseData.rspC) {
+						// 로그인 상태변경(성공)
+					} else {
+
+					}
+				}
+			}
+
+			$.extend(true, options, option);
+			sso.log("ssoLogin Options", option)
+
+			SSO.library.callSsoLogin(options);
+		}
+		, execute: function(option){
+			var akDta = option.akDta;
+			if(akDta && (akDta.ssoTkn == '' || !akDta.ssoTkn)) {
+				delete option.akDta;
+			}
+
+			var options = {
+				akUrl: _constMap.url.SSO_LOG_IN
+			}
+
+			$.extend(true, options, option);
+			_ssoLogin.api(options);
+		}
+		, autoLogin: function(option){
+
+			sso.log('mmt', moment().format('YYYYMMDDHHmmss'))
+			// 쿠키에서 자동로그인 갱신토큰 값 조회하기
+			var options = {
+				akUrl: _constMap.url.AUTO_LOG_IN	// 자동로그인
+				, akDta: {
+					rnwTkn: ''	// 갱신토큰
+					, autoLgnRgDtti: moment().format('YYYYMMDDHHmmss') // 자동 로그인을 위해 갱신토큰을 저장하는 시점의 일시
+				}
+				, callback: function(){
+					// 로그인 성공되고 나면, 쿠키에 값(자동로그인 갱신 토큰값) 셋팅하기
+				}
+			}
+
+			$.extend(true, options, option);
+			_ssoLogin.api(options);
+		}
+	}
+
+	var _logout = {
+		api: function(option) {
+			option = option || {};
+
+			if(!option.callback) {
+				option.callback = function(responseData) {
+					sso.log("logout callback:", responseData);
+					if("00" == responseData.rspC) {
+						// 로그인 상태변경(성공)
+					} else {
+						// 세션 끊기
+					}
+				}
+			}
+
+			SSO.library.callLogout(option);
+		}
+	}
+
+	var _callApi = {
+		api: function(option){
+			option = option || {};
+
+			if(!option.callback) {
+				option.callback = function(responseData) {
+					sso.log("callApi callback:", responseData);
+				}
+			}
+
+			SSO.library.callApi(option)
+		}
+	}
+
+	var _callScreen = function(option){
+		var options = {
+			akUrl: "/exView/join/mbrJoin_01_001" // 요청URL
+			, rturUrl: window.location.href // 리턴URL
+			, rturUrlCaloMethd: "GET" // 리턴URL호출메소드
+		}
+
+		$.extend(true, options, option);
+		SSO.library.callScreen(options)
+	}
+
+	return {
+		// SSO 라이브러리 초기화
+		init: function(data) {
+			SSO.init(data)
+		}
+		// 로그인 처리 함수 호출
+		, login: function(data) {
+			_login.api(data)
+		}
+		// SSO 로그인 처리 함수 호출
+		, ssoLogin: function(data){
+			_ssoLogin.execute(data)
+		}
+		// SSO 소셜로그인 처리 함수 호출
+		, socialLogin: function(data){
+			_login.socialLogin(data)
+		}
+		// 로그아웃 처리 함수 호출
+		, logout: function(data){
+			_logout.api(data)
+		}
+		// 자동로그인 처리 함수 호출
+		, autoLogin: function(data){
+			_ssoLogin.autoLogin(data)
+		}
+		// 멤버스 api 사용 함수 호출
+		, callApi: function(data){
+			_callApi.api(data);
+		}
+		// sso 초기화시 설정된 값 관련 호출함수
+		, get: function(key){
+			if(typeof SSO[key] === 'string') {
+				return SSO[key];
+			} else {
+				return '';
+			}
+		}
+		// 사용자 셋팅 값 설정 및 호출 함수
+		, getData: function(key, val){
+			var clear = val === '' ? true : false;
+
+			if(clear) {
+				SSO.data[key] = "";
+			} else {
+				SSO.data[key] = val || SSO.data[key];
+			}
+
+			return SSO.data[key] || '';
+		}
+		// 멤버스 api 호출 목록
+		, getUrl: function(data){
+			return _constMap.url[data] || "";
+		}
+		// 멤버스 화면 호출 목록
+		, getExUrl: function(data){
+			return _constMap.exUrl[data] || "";
+		}
+		// guide 에서만 씀. -- 오픈 후 삭제해도됨
+		, getUrls: function(data){
+			return data == 'ex' ? _constMap.exUrl : _constMap.url;
+		}
+		// 멤버스에서 현재 sso 토큰 조회
+		, getToken: function(data){
+			SSO.getToken(data)
+		}
+		// SSO 라이브러리 reInit
+		, reInit: function(data){
+			var accessToken = data.acesTkn || '';
+
+			var options = {
+				ccoSiteNo: sso.get('siteNo')
+				, clntAkInf: sso.get('clientAkInfo')
+				, acesTkn: accessToken		//접근토큰. 로그인후에 필수적으로 입력
+				, channel: sso.get('channel')	// 사용자 환경 구분(0: PC Web, 1: Mobile Web, 2: Mobile App)
+				, isLoggedIn: accessToken == '' ? false : true
+				, ssoLogin: {
+					callback: function(data){
+						sso.log('sso.init callback..> ', data);
+						if(data.rspC == '00') {
+						}
+					}
+				}
+			}
+
+			SSO.reInit(options);
+		}
+		// guide 에서만 씀. -- 오픈 후 삭제해도됨
+		, serverApi: function(data) {
+			SSO.serverApi.execute(data);
+		}
+		// 현재 모바일 여부
+		, isMobile: function() {
+			return SSO.channel == 0 ?  false : true;
+		}
+		// 현재 멤버스 라이브러리 초기화 여부
+		, isMembers: function() {
+			return SSO.library === null ? false : true;
+		}
+		// 현재 멤버스 로그인 여부
+		, isMembersLogin: function() {
+			return SSO.library !== null && sso.get('acesTkn') ? true : false;
+		}
+		// 멤버스 화면 호출 함수
+		, callScreen: function(data) {
+			return _callScreen(data);
+		}
+		, library: function(){
+			return SSO.library
+		}
+		, log: function() {
+			if(_isDebug) {
+				var args = Array.prototype.slice.call(arguments);
+				args.unshift("#렌탈-SSO :" + " ");
+				console.log.apply(console, args);
+			}
+		}
+	}
+})();
