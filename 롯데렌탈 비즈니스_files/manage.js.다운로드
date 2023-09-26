@@ -1,0 +1,62 @@
+$(function () {
+  function responseTable() {
+    function decideSizing() {
+      var browserWidth = $(window).width();
+      if ((!$(".rwd-table").hasClass("mobile")) && browserWidth < 992) {
+        $(".rwd-table").addClass("mobile");
+        rwdTable("m");//모바일사이즈이하이고 mobile클래스가 없을때
+      } else if (browserWidth > 992) {
+        $(".rwd-table").removeClass("mobile");
+        rwdTable("pc");//모바일사이즈이상일때
+      }
+    };
+    decideSizing();//페이지를 열었을때, 바로 실행되어서 모바일인지 판별함.
+    $(window).resize(function () {
+      if (this.resizeTO) {
+        clearTimeout(this.resizeTO);
+      }
+      this.resizeTO = setTimeout(function () {
+        $(this).trigger('resizeEnd');
+      }, 100);
+    });
+    $(window).on('resizeEnd', function () {
+      decideSizing();
+    });//리사이징될때, 한번만 실행되게 함
+    function rwdTable(device) {
+      if (device == "m") {
+        // 목록형 테이블
+        if ($(".rwd-table").find("thead").length) {
+            $(".rwd-table thead th").each(function () {
+              var index = $(this).index(); //th의 각각의 index번호
+              var txt = $(this).html(); //각각의th텍스트 저장
+              $(this).parents("thead").siblings("tbody").children("tr").each(function () {
+                var insertTag = '<em class="title">' + txt + '</em>'; //em태그 생성
+                $(this).children().eq(index).prepend(insertTag); //기존데이터 앞에 삽입 
+              }); 
+            });          
+        }
+
+        // 데이터형 테이블
+        if ($(".rwd-table").parent().hasClass("view-type")) {
+          $(".rwd-table tbody th").each(function () {
+            //var index = $(this).index(); //th의 각각의 index번호
+            var txt = $(this).html(); //각각의th텍스트 저장
+            $(this).next("td").each(function () {
+              var insertTag = '<em class="title">' + txt + '</em>'; //em태그 생성
+              $(this).prepend(insertTag); //기존데이터 앞에 삽입
+            });
+          });
+        }
+
+       
+
+      } else if (device == "pc") {
+        $(".rwd-table tbody tr").each(function () {
+          $(this).children().find('em').remove();
+        });
+      }
+    };//th의 내용을 동적으로 td에 생성해주는 함수
+  };
+  // 반응형 테이블
+  responseTable();
+});

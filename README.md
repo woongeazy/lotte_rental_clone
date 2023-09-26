@@ -17,6 +17,6 @@
 ![클론미리보기](images/클론(설계).png)
 
 # 확인하기
-[롯데렌탈비즈니스클론](https://naver.com)
+[클론완성](https://woongeazy.github.io/clon_coding/)
 
 최종 완료하였음

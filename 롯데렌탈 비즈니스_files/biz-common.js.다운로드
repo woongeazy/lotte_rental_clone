@@ -1,0 +1,1168 @@
+var SELECT_OPT_ALL = '전체';
+var SELECT_OPT_SEL = '선택';
+var EXTENSION_TYPES = {'IMG':['gif', 'jpeg', 'jpg', 'png'], 'EXCEL':['xls', 'xlsx'], 'DOC':['jpg', 'png', 'xls', 'xlsx']}
+var PAGING_PREV = '<a href="javascript:void(0)" class="page_btn page_prev_btn">이전</a>';
+var PAGING_NEXT = '<a href="javascript:void(0)" class="page_btn page_next_btn">다음</a>';
+
+
+
+/* ajax send 및 stop 공통 설정  */
+$(document).ajaxSend(function(e, jqxhr, options) {
+	// 로딩바 show 작업필요
+	var url = options.url;
+	if(url == "/headerAutoComplete.json" || url == "/autoComplete.json"){ // 메인 상품검색 및 상품검색 자동검색 로딩바 막기
+		//	$(".loading-bar-dimm").hide();
+	}else{
+		$(".loading-bar-dimm").show();
+	}
+
+}).ajaxStop(function() {
+
+	// 로딩바 hide 작업필요
+	$(".loading-bar-dimm").hide();
+
+});
+
+var agent = window.navigator.userAgent;
+
+/* 모바일 / 웹 접근 체크  */
+function isMobile(){
+	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(agent);
+}
+
+
+
+//개인정보 마스킹 처리
+var maskingFunc = {
+	checkNull : function (str){
+		if(typeof str == "undefined" || str == null || str == ""){
+			return true;
+		}
+		else return false;
+	},
+	/*
+    ※ 이메일 마스킹
+         변경 데이터 : ****aaaa@naver.com
+    */
+	email : function(str){
+		if(!str) return "";
+
+		var originStr = str;
+		var emailStr = originStr.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+		var strLength;
+
+		if(this.checkNull(originStr) == true || this.checkNull(emailStr) == true){
+			return originStr;
+		}else{
+			return originStr.toString().replace(new RegExp('^.{2}(?=.+@)', 'g'),'**');
+		}
+	},
+	/*
+     ※     전화 번호 마스킹
+     * 	01012345678 => 010-1234-5***
+     * 	0101234567 => 010-123-4***
+     *  0212345678 => 02-1234-5***
+    */
+	phone : function(str){
+		str = str +'';
+		if(!str) return str;
+
+		str = formatPhone(str); // 휴대폰 하이픈 처리
+		return str.toString().replace(str, str.replace(/(\d{2,3})\-(\d{3,4})\-(\d{1})(\d{3})/gi,'$1-$2-$3***'));
+	},
+	/*
+    ※ 주민등록 번호 마스킹 (Resident Registration Number, RRN Masking)
+    ex1) 원본 데이터 : 990101-1234567, 변경 데이터 : 990101-1******
+    ex2) 원본 데이터 : 9901011234567, 변경 데이터 : 9901011******
+    */
+	rrn : function(str){
+		str = str +'';
+		var originStr = str;
+		var rrnStr;
+		var maskingStr;
+		var strLength;
+
+		if(this.checkNull(originStr) == true){
+			return originStr;
+		}
+
+		rrnStr = originStr.match(/(?:[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[1,2][0-9]|3[0,1]))-[1-4]{1}[0-9]{6}\b/gi);
+		if(this.checkNull(rrnStr) == false){
+			strLength = rrnStr.toString().split('-').length;
+			maskingStr = originStr.toString().replace(rrnStr,rrnStr.toString().replace(/(-?)([1-4]{1})([0-9]{6})\b/gi,"$1$2******"));
+		}else {
+			rrnStr = originStr.match(/\d{13}/gi);
+			if(this.checkNull(rrnStr) == false){
+				strLength = rrnStr.toString().split('-').length;
+				maskingStr = originStr.toString().replace(rrnStr,rrnStr.toString().replace(/([0-9]{6})$/gi,"******"));
+			}else{
+				return originStr;
+			}
+		}
+		return maskingStr;
+	}
+}
+
+
+
+
+
+
+
+/* ajax 통신 처리 함수
+ *
+ * 매개변수 설명
+ * 1) syncFlag : 동기 및 비동기 처리 flag
+ * 2) uri : json 통신을 위한 url
+ * 3) param : 서버에 전달한 데이터 JSON
+ * 4) success : 서버 요청 성공시 콜백함수
+ * 5) successParam : 서버 요청 성공시 콜백함수 에 같이 전달할 데이터
+ * 6) error : 서버 요청 실패시 콜백함수
+ * 7) errorMessage : 서버요청 실패시 메세지
+ * */
+
+function postProcessing(syncFlag,uri, param,success,successParam,error,errorMessage) {
+
+	if(typeof syncFlag === 'undefined' || syncFlag == "" || syncFlag == null){
+		syncFlag = false;
+	}
+
+	var token = $("meta[name='_csrf']").attr("content"); // CSRF 토큰
+	var header = $("meta[name='_csrf_header']").attr("content"); // CSRF 토큰 헤더
+
+	$.ajax({
+		type: "POST",
+		contentType: "application/json",
+		asynce : syncFlag,
+		url: uri,
+		data: param,
+		dataType: "json",
+		/*showProgressBar: showbar,*/
+		beforeSend: function(xhr) {
+			xhr.setRequestHeader("AJAX", true);
+			xhr.setRequestHeader(header, token);
+		},
+		success: function(data) {
+
+			if (typeof (success) == 'undefined') {
+			}else if (typeof (success) == 'function') {
+				success(data);
+			}else {
+				var funcCall = success + "(data, successParam);";
+				if(success != null){
+					var ret = eval(funcCall);
+					ret;
+				}
+			}
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			//$(".loading-bar-dimm").hide();
+			if (jqXHR.status == 401) {
+				return false;
+			} else if (jqXHR.status == 403) {
+				//	commonValidMessage("commonSingleAlert",'사용 권한이 없습니다.','loginPageMove',null,'loginPageMove',null);
+				return false;
+			}
+
+			if (error==null || typeof (error) == 'undefined') {
+				if (typeof (errorMessage) == 'undefined') {
+					PostProcessError(jqXHR);
+				}else{
+					if (errorMessage!=null ) {
+						alert(errorMessage);
+					}
+				}
+
+				return false;
+			}
+			else {
+				var funcCall = error + "(jqXHR);";
+				var ret = eval(funcCall);
+
+				ret;
+			}
+
+		}
+	});
+}
+
+function loginPageMove(){
+	$(location).attr('href', '/login.do');
+}
+
+
+
+function PostProcessError(jqXHR){
+	//commonValidMessage("commonSingleAlert",'데이터 처리중 에러가 발생했습니다.');
+}
+
+
+function commonError(xhr){
+	if(xhr.status==403){
+		commonValidMessage("commonSingleAlert","사용권한이 없습니다.");
+		$(location).attr('href', '/main.do');
+	}else{
+		commonValidMessage('commonSingleAlert','시스템 에러가 발생했습니다');
+	}
+}
+
+/* 페이지 이동 처리 함수
+ * 매개변수
+ *
+ * 1) url    : 이동할 URL
+ * 2) postObject : 서버에 전송할 데이터 Array
+ * 3) clear : sessionStorage 클리어 여부
+ *
+ * */
+function setRedirectForm(url, postObject, clear) {
+	var frm, input;
+
+	frm = document.createElement('form');
+	frm.method = "POST";
+	frm.action = url;
+	document.body.appendChild(frm);
+
+	if (postObject != null && typeof (postObject) != "undefined") {
+		$.each(postObject, function(key, value) {
+			input = document.createElement('input');
+			input.setAttribute('type', 'hidden');
+			input.setAttribute('id', value.id);
+			input.setAttribute('name', typeof value.name == 'undefined' ? value.id : value.name);
+			input.setAttribute('value', value.value);
+			frm.appendChild(input);
+		});
+	}
+
+	/* 공통 CSRF Token 추가 */
+
+	input = document.createElement('input');
+	input.setAttribute('type', 'hidden');
+	input.setAttribute('id', '_csrf');
+	input.setAttribute('name','_csrf');
+	input.setAttribute('value', $("meta[name='_csrf']").attr("content"));
+	frm.appendChild(input);
+
+	/* if (typeof (clear) != 'undefined') {
+         sessionStorage.clear();
+     }
+ */
+	frm.submit();
+}
+
+
+/*
+ *  공통 설정 함수
+ *  매개변수
+ *  1) setDate - 페이지 진입시 초기설정 일자
+ *  2) dropdownsUse - 기본값 : false / true 일시 showDropdowns 사용 ★
+ * */
+
+function setDatePickerOpts(setDate,dropdownsUse){
+
+	var datePickerOpts = {
+		singleDatePicker: true,
+		showDropdowns: typeof dropdownsUse !=="undefined" ? dropdownsUse : false,
+		//년월 수동 설정 여부
+		startDate : setDate,
+		autoApply: true,
+		//true 확인 취소버튼을 숨기고 날짜클릭시 자동적용
+		locale: {
+			monthNames: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10","11", "12"],
+			daysOfWeek: ["일", "월", "화", "수", "목", "금", "토"],
+			format: "YYYY.MM.DD",
+			cancelLabel: '취소',
+			applyLabel: "확인"
+		}
+	};
+
+	return datePickerOpts;
+}
+
+/* 날짜 관련 포멧 함수 */
+function formatDate(date) {
+	var d = new Date(date),
+		month = '' + (d.getMonth() + 1),
+		day = '' + d.getDate(),
+		year = d.getFullYear();
+
+	if (month.length < 2)
+		month = '0' + month;
+	if (day.length < 2)
+		day = '0' + day;
+
+	return [year, month, day].join('.');
+}
+/*
+ * 전화 번호 포멧
+ * 	01012345678 => 010-1234-5678
+ * 	0101234567 => 010-123-4567
+ *  0212345678 => 02-1234-5678
+ * */
+function formatPhone(str){
+	if(!str) return str;
+
+	str = onlyNumber(str);
+	if(str.startsWith("010"))
+		return str.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, '$1-$2-$3');
+	else if(str.startsWith("02"))
+		return str.replace(/^(\d{2})(\d{3,4})(\d{4})$/, '$1-$2-$3');
+	else return str;
+}
+
+/* 숫자만 남김 */
+function onlyNumber(str){
+	if(!str) return  '';
+
+	str = str + '';
+	return str.replace(/[^0-9]/g,'');
+}
+
+/* 3일후 일자 조회 */
+function getThreeDaysAfter() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate()+3, 0, 0, 0, 0);
+}
+
+/* 현재 일자 조회 */
+function getToday() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate(), 0, 0, 0, 0);
+}
+
+/* 현재 월 조회 */
+function getThisMonth() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth(), "01", 0, 0, 0, 0);
+}
+
+/* 1개월전 날짜 조회 함수*/
+function getPreOneMonth() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, nowDate.getDate(), 0, 0, 0, 0);
+}
+/* 1개월후 날짜 조회 함수*/
+function getAftOneMonth() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, nowDate.getDate(), 0, 0, 0, 0);
+}
+
+/* 2개월전 날짜 조회 함수 */
+function getPreTwoMonth(){
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth() - 2, nowDate.getDate(), 0, 0, 0, 0);
+}
+/* 2개월후 날짜 조회 함수 */
+function getAftTwoMonth(){
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth() + 2, nowDate.getDate(), 0, 0, 0, 0);
+}
+
+
+/* 3개월전 날짜 조회 함수 */
+function getPreThreeMonth() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth() - 3, nowDate.getDate(), 0, 0, 0, 0);
+}
+/* 3개월후 날짜 조회 함수 */
+function getAftThreeMonth() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear(), nowDate.getMonth() + 3, nowDate.getDate(), 0, 0, 0, 0);
+}
+
+/* 1년전 날짜 조회 함수 */
+function getPreOneYear() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear() - 1, nowDate.getMonth(), nowDate.getDate(), 0, 0, 0, 0);
+}
+
+/* 4년전 날짜 조회 함수 */
+function getPreFourYear() {
+	var nowDate = new Date();
+	return new Date(nowDate.getFullYear() - 4, nowDate.getMonth(), nowDate.getDate(), 0, 0, 0, 0);
+}
+
+
+
+/* 페이지 상세 정보 설정
+ * 매개변수
+ *
+ * 1) url    : 현재 URL
+ * 2) condition : 유지될 데이터 형태 ex) keyName=value&=kayName2=value2
+ *
+ * */
+function setPreCondition(url, condition){
+	sessionStorage.setItem('pre_url', url);
+	sessionStorage.setItem('pre_con', condition);
+}
+
+function getCondition(form) {
+
+	var x = document.getElementById(form);
+	var text="";
+	var i;
+	for(i=0;i<x.length;i++){
+		if (x.elements[i].id != '' && x.elements[i].value != '') {
+
+			if( x.elements[i].type == 'radio' ) {
+				if( x.elements[i].checked) {
+					console.log( x.elements[i].value );
+					text+=x.elements[i].name+ "=" + x.elements[i].value + "&";
+				}
+			} else {
+				text+=x.elements[i].id+ "=" + x.elements[i].value + "&";
+			}
+
+		}
+		//x내의 value값을 뽑아내서 text에 저장
+	}
+	console.log(text);
+	return text;
+}
+
+function setConditionForm(data) {
+
+	var datas = data.split("&");
+
+	var i;
+	var values;
+	for(i=0;i<datas.length;i++){
+		values = datas[i].split("=");
+//		console.log(i, values);
+		if (values[0] == 'srhOpt') {
+//			$("#one, #two, #three, #direct").removeClass("on");
+//			$("#" + values[1]).addClass("on");
+			$("#" + values[1]).trigger('click');
+		} else if (values[0] == 'radioPeriod') {
+			$('input:radio[name="radioPeriod"][value="'+values[1]+'"]').attr('checked', true);
+		} else {
+			if( values[1] != undefined ){
+				$("#" + values[0]).val(values[1]);
+			}
+		}
+	}
+
+	sessionStorage.removeItem('pre_url');
+	sessionStorage.removeItem('pre_con');
+}
+
+
+
+/* 문자열 널 체크 함수 */
+function nullToStr(val){
+	return val==null || val==undefined?'':val;
+}
+
+function nvl(expr1,expr2){
+	return expr1 == "" || expr1 == null || expr1 == undefined ?  expr2 : expr1
+}
+
+function nvlStr(val, str){
+
+	var result = "";
+
+	if(val == null || val == undefined || val == "") {
+
+		if(str != null || str != undefined || str != "") {
+
+			return str;
+		}else {
+			return "";
+		}
+	}else {
+		return val;
+	}
+}
+
+/* 사업자등록번호 검사 함수 */
+function checkBizID(bizID){
+	var re = /-/g;
+	var bizID = bizID.replace(re,'');
+	var checkID = new Array(1, 3, 7, 1, 3, 7, 1, 3, 5, 1);
+	var tmpBizID, i, chkSum=0, c2, remander;
+
+	for (i=0; i<=7; i++){
+		chkSum += checkID[i] * bizID.charAt(i);
+	}
+
+	c2 = "0" + (checkID[8] * bizID.charAt(8));
+	c2 = c2.substring(c2.length - 2, c2.length);
+
+	chkSum += Math.floor(c2.charAt(0)) + Math.floor(c2.charAt(1));
+
+	remander = (10 - (chkSum % 10)) % 10 ;
+
+	if (Math.floor(bizID.charAt(9)) == remander){
+		return true; // OK!
+	}
+	return false;
+}
+
+/* 법인 번호 검사 함수 */
+
+function isRegNo(sRegNo){
+	var re = /-/g;
+	sRegNo = sRegNo.replace('-','');
+
+	if (sRegNo.length != 13){
+		return false;
+	}
+	var arr_regno  = sRegNo.split("");
+	var arr_wt   = new Array(1,2,1,2,1,2,1,2,1,2,1,2);
+	var iSum_regno  = 0;
+	var iCheck_digit = 0;
+
+	for (i = 0; i < 12; i++){
+		iSum_regno +=  eval(arr_regno[i]) * eval(arr_wt[i]);
+	}
+
+	iCheck_digit = 10 - (iSum_regno % 10);
+
+	iCheck_digit = iCheck_digit % 10;
+
+	if (iCheck_digit != arr_regno[12]){
+		return false;
+	}
+	return true;
+}
+
+/* 숫자 체크 함수 */
+function checkInputNum(el){
+	$("#"+el).on("keyup",function(event){
+		$(this).val($(this).val().replace(/[^0-9]/g,""));
+	});
+}
+
+
+/* 숫자 콤마추가 함수 */
+function numberWithCommas(x) {
+
+	if( !$.isNumeric(removeComma(x.value)) ) {
+		modalToast('숫자만 입력할 수 있습니다.', 'toast', 'align_lf', "toast_danger");
+	}
+
+	var rtn = x.value;
+	rtn = rtn.replace(/[^0-9]/g,'');   // 입력값이 숫자가 아니면 공백
+	rtn = rtn.replace(/,/g,'');          // ,값 공백처리
+	$(x).val(rtn.replace(/\B(?=(\d{3})+(?!\d))/g, ",")); // 정규식을 이용해서 3자리 마다 , 추가
+}
+
+/* 콤마 제거 함수 */
+function removeComma(str) {
+	n = parseInt(str.replace(/,/g,""));
+	return n;
+}
+
+//3자리 콤마 추가
+function won(val) {
+	return nullToStr(val+"").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/* 문자열 콤마 추가 함수 */
+
+function comma(str) {
+	str = String(str);
+	return str.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
+}
+
+
+/* 콤마 풀기 함수 */
+function uncomma(str) {
+	str = String(str);
+	return str.replace(/[^\d]+/g, '');
+}
+
+
+/* JQuery form serializeObject 함수 */
+$.fn.serializeObject = function() {
+	var valAll = {};
+	var valChk = {};
+
+	var noChkForm = $(this, !'input[type=checkbox]!').serializeArray();
+	var chkForm = $('input[type=checkbox]', this).serializeArray();
+
+	//checkbox
+	$.each(chkForm, function() {
+		if (valChk[this.name] == undefined) {
+			valChk[this.name] = [valChk[this.name]];
+			valChk[this.name].shift();	//첫번재 항목 삭제
+		}
+
+		valChk[this.name].push(this.value || '');
+	});
+
+	//checkbox 제외
+	$.each(noChkForm, function() {
+		valAll[this.name] = this.value || '';
+	});
+
+	valAll = $.extend(valAll, valChk);
+	//console.log("valAll :: ", valAll);
+
+	return valAll;
+};
+
+
+/* JQuery textLength 함수 */
+$.fn.textLength = function(maxLng) {
+
+	$(this).on('keydown', function(e){
+
+	}).on('keyup', function(e){
+
+		var txtLng = $(this).val().length;
+
+		if(txtLng > maxLng) {
+			$(this).val($(this).val().substring(0, maxLng));
+
+			//길이 재조회
+			txtLng = $(this).val().length;
+		}
+
+		//글자수 return
+		$(this).parent().parent().find(".txtLng").text(txtLng);
+	});
+};
+
+
+/* 파일 업로드 확장자 체크 함수 */
+function checkFileExtension(val, fileTypes){
+	if(val.length>0){
+		var ext = val.slice(val.indexOf(".") + 1).toLowerCase();
+		if ($.inArray(ext, fileTypes) == -1) {
+			alert('허용되는 확장자가 아닙니다.');
+			return false;
+		}
+	}
+	return true;
+}
+
+/* IE 체크 함수 */
+function isIE(){
+	var agt = navigator.userAgent.toLowerCase();
+	return agt.indexOf("msie") != -1? true:false;
+}
+
+
+/* 데이터 공백 제거 함수 */
+function perfectTrim(str) {
+
+	return str.replace(/(\s*)/g,"");
+
+}
+
+/* 공통 팝업 처리 함수 */
+function commonValidMessage(id,message,cancelFunc,cancelParam,alertOkFunc,alertOkParam){
+
+
+	$("#" + id).addClass("on");
+	var cancelCall = cancelParam != null ? cancelFunc + "(cancelParam);" : cancelFunc +"()";
+	var alertOkCall= alertOkParam !=null ?  alertOkFunc   + "(alertOkParam)" : alertOkFunc +"()";
+
+	if(id == "commonSingleAlert"){
+		$("#singleMessage").html("");
+		$("#singleMessage").html(message);
+
+		$("[data-fn='singleLyClose']").off('click').on('click',function(e){
+			$(this).parent().removeClass("on").parent().removeClass("on");
+		});
+
+		if(typeof alertOkFunc !== 'undefined' && typeof eval(alertOkFunc) =='function'){
+			$("#singleAlertOk").off('click').on('click',function(){
+				$("[data-fn='singleLyClose']").click();
+				eval(alertOkCall);
+			});
+		}else{
+			$("#singleAlertOk").off('click').on('click',function(){
+				$("[data-fn='singleLyClose']").click();
+			});
+		}
+	}else{
+		$("#mutiMessage").html("");
+		$("#mutiMessage").html(message);
+
+		$("[data-fn='mutiLyClose']").off('click').on('click',function(e){
+			$(this).parent().removeClass("on").parent().removeClass("on");
+			if(typeof cancelFunc !== 'undefined' && typeof eval(cancelFunc) =='function'){
+				eval(cancelCall);
+			}
+		});
+
+		if(typeof cancelFunc !== 'undefined' && typeof eval(cancelFunc) =='function'){
+			$("#cancel").off('click').on('click',function(){
+				$("[data-fn='mutiLyClose']").click();
+			});
+		}else{
+			$("#cancel").off('click').on('click',function(){
+				$("[data-fn='mutiLyClose']").click();
+			});
+		}
+
+		if(typeof alertOkFunc !== 'undefined' && typeof eval(alertOkFunc) =='function'){
+			$("#alertOk").off('click').on('click',function(){
+				eval(alertOkCall);
+				$("#commonMutiAlert").removeClass("on");
+			});
+		}else{
+			$("#alertOk").off('click').on('click',function(){
+				$("#commonMutiAlert").removeClass("on");
+			});
+		}
+	}
+
+
+}
+
+//"paging", "1", "100", 5, function () {});
+function setPaging(id, currentPage, lastPage, pageLength, pageMoveFunc ,params ,moveTop)
+{
+	$('#' + id).paging({
+		current: currentPage,
+		max: lastPage,
+		next: PAGING_NEXT,
+		prev: PAGING_PREV,
+		length : pageLength,
+		onclick:function(e, page){
+			pageMoveFunc(page,params);
+		}
+	});
+
+	$("#"+id+" a.page_prev_btn").parent().addClass("paging paging-arrow paging-arrow-left");
+	$("#"+id+" a.page_prev_btn").html('');
+	$("#"+id+" a.page_next_btn").parent().addClass("paging paging-arrow paging-arrow-right");
+	$("#"+id+" a.page_next_btn").html('');
+}
+
+function setInitPaging(id)
+{
+	$('#' + id).paging({
+		current: 0,
+		max: 0,
+		length : 0
+	});
+}
+
+function autoComplete(obj, url, param, name, field)
+{
+	postProcessing(false, url, JSON.stringify(param), function(data) {
+		var rows='';
+		if(data[name].length>0) {
+			console.info(data[name]);
+
+			rows = "";
+			var html = "";
+			$.each(data[name], function() {
+				html += "<li>" + this[field] + "</li>";
+			});
+			$(obj).html(html);
+			$(obj).show();
+
+		}else {
+			$(obj).html("");
+			$(obj).hide();
+		}
+	});
+}
+
+function changeSelect(){
+	$('.selected').each(function(i){
+		$(this).html($(this).siblings('select').find('option:selected').text())
+	});
+}
+
+function fileDownload(fileName, folder, filePath, originFileName) {
+	var param = new Array();
+	param.push({ 'id': 'fileName', 'value': fileName });
+	param.push({ 'id': 'folder', 'value': folder });
+	if(filePath!=null && typeof(filePath)!= 'undefined') {
+		param.push({ 'id': 'path', 'value': filePath });
+	} else {
+		param.push({ 'id': 'path', 'value': '' });
+	}
+	if(originFileName!=null && typeof(originFileName)!= 'undefined') {
+		param.push({ 'id': 'originFileName', 'value': originFileName });
+	}
+	setRedirectForm('/fileDownload.do', param);
+}
+
+function setRedirectFormGet(url, postObject, clear) {
+	var frm, input;
+
+	frm = document.createElement('form');
+	frm.method = "GET";
+	frm.action = url;
+	document.body.appendChild(frm);
+
+	if (postObject != null && typeof (postObject) != "undefined") {
+		$.each(postObject, function(key, value) {
+			input = document.createElement('input');
+			input.setAttribute('type', 'hidden');
+			input.setAttribute('id', value.id);
+			input.setAttribute('name', typeof value.name == 'undefined' ? value.id : value.name);
+			input.setAttribute('value', encodeURIComponent(value.value));
+			frm.appendChild(input);
+		});
+	}
+
+	input = document.createElement('input');
+	input.setAttribute('type', 'hidden');
+	input.setAttribute('id', '_csrf');
+	input.setAttribute('name','_csrf');
+	input.setAttribute('value', $("meta[name='_csrf']").attr("content"));
+	frm.appendChild(input);
+
+	if (typeof (clear) != 'undefined') {
+		sessionStorage.clear();
+	}
+
+	frm.submit();
+}
+
+function LayerPopOpenNewId(url, title, clear, id)
+{
+	$('#' + id).css({
+		'display':'flex'
+	});
+
+	if(clear!=undefined && clear){
+		$("#" + id).empty();
+	}
+	$.get(url, function(data) {
+
+		$("#" + id).append(data).promise().done(function() {
+
+			$("#" + id).show();
+			$('html').addClass('overflow-hidden');
+			$("#titleP").text(title);
+		});
+	});
+
+	return false;
+}
+
+
+function LayerPopOpenId(url,clear,id,cancel,success){
+	if(clear!=undefined && clear){
+		$("#" + id).empty();
+		$("html").removeClass("scroll_lock");
+	}
+
+	$.get(url, function(data) {
+		$("#" + id).append(data).promise().done(function() {
+			$("#" + id).show();
+			$("#" + id).children('.ly-group').addClass('on');
+			//팝업 open 후 callback 함수 호출
+			if(success) eval(success);
+		});
+	});
+}
+
+//이메일 정규식 체크
+function validEmail(val) {
+	var re=/^[0-9a-zA-Z]([-_\.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_\.]?[0-9a-zA-Z])*\.[a-zA-Z]{2,3}$/i;
+	return re.test(val);
+}
+
+
+/* 중앙정렬 팝업 */
+function openWindowPop(title,url,nWidth ,nHeight ){
+
+	var curX = window.screenLeft;
+	var curY = window.screenTop;
+	var curWidth = document.body.clientWidth;
+	var curHeight = document.body.clientHeight;
+
+	var nLeft = curX + (curWidth / 2) - (nWidth / 2);
+	var nTop = curY + (curHeight / 2) - (nHeight / 2);
+
+	var options = "";
+	options += "left=" + nLeft + "px,";
+	options += "top=" + nTop + "px,";
+	options += "width=" + nWidth + "px,";
+	options += "height=" + nHeight + "px,";
+	options += "toolbar=no,menubar=no,location=no,";
+	options += "resizable=yes,status=yes";
+
+	var winObj = window.open(url, title, options);
+	if (winObj == null) {
+		alert("팝업 차단을 해제해주세요.");
+		return false;
+	}
+
+}
+
+
+//특수문자 제거
+function removeRegExp(str){
+	var reg = /[\{\}\[\]\/?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/gi
+	if(reg.test(str)){
+		return str.replace(reg, "");
+	} else {
+		return str;
+	}
+}
+
+
+function mobileMaskFmt(orgMobile){
+
+	var cvtMobile;
+
+	if(!orgMobile){
+		return nullToStr(orgMobile);
+	}else{
+		if(orgMobile.length == 11){
+			cvtMobile = orgMobile.substring(0,3)+"-"+orgMobile.substring(3,7)+"-"+"****";
+		}else if(orgMobile.length == 10){
+			cvtMobile = orgMobile.substring(0,2)+"-"+orgMobile.substring(2,6)+"-"+"****";
+		}else if(orgMobile.length == 9){
+			cvtMobile = orgMobile.substring(0,2)+"-"+orgMobile.substring(2,5)+"-"+"****";
+		}else{
+			cvtMobile = orgMobile;
+		}
+		return cvtMobile;
+	}
+}
+
+function mobileFmt(orgMobile){
+
+	var cvtMobile;
+
+	if(!orgMobile){
+		return nullToStr(orgMobile);
+	}else{
+		if(orgMobile.length == 11){
+			cvtMobile = orgMobile.substring(0,3)+"-"+orgMobile.substring(3,7)+"-"+orgMobile.substring(7,11);
+		}else if(orgMobile.length == 10){
+			cvtMobile = orgMobile.substring(0,2)+"-"+orgMobile.substring(2,6)+"-"+orgMobile.substring(6,10);
+		}else if(orgMobile.length == 9){
+			cvtMobile = orgMobile.substring(0,2)+"-"+orgMobile.substring(2,5)+"-"+orgMobile.substring(5,9);
+		}else{
+			cvtMobile = orgMobile;
+		}
+		return cvtMobile;
+	}
+}
+
+
+function getUrlQuery(){ var url = document.location.href; var qs = url.substring(url.indexOf('?') + 1).split('&'); for(var i = 0, result = {}; i < qs.length; i++){ qs[i] = qs[i].split('='); result[qs[i][0]] = decodeURIComponent(qs[i][1]); } return result; }
+
+
+function isMobileIOS() {
+
+	var mobileKeyWords = ['iphone', 'ipod' ,'ipad'];//iPad
+
+	for (var i = 0; i < mobileKeyWords.length; i++) {
+		if (navigator.userAgent[i] != null && navigator.userAgent[i] != "") {
+			if (navigator.userAgent.toLocaleLowerCase().match(mobileKeyWords[i])) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+function goApp(ssoTkn) {
+	var nowUrl = "?url=/main.do";
+
+	try{
+		if (isMobile()){
+			if (isMobileIOS()) {
+				appStart('ios', nowUrl);
+			} else {
+				appStart('and', nowUrl);
+			}
+		}
+	} catch (e) {
+		console.log(e);
+	}
+}
+
+function appStart(OSName, url){
+	if("ios" == OSName ){
+		setTimeout(function(){
+			checkApplicationInstall_callback(OSName);
+		}, 3000);
+		location.href = "automanager://home"+url;
+	} else if("and" == OSName ){
+		window.location = "intent://#Intent;scheme=automanager;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=net.lotterentacar.manager;S."+url.replace("?","")+";end";
+	} else{
+		return;
+	}
+}
+
+function checkApplicationInstall_callback(OSName) {
+	if("and"==OSName){
+		try {
+			// 어플리케이션 설치되어있음
+			window.location.href = "intent://viewer?#Intent;scheme=automanager;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=net.lotterentacar.manager;end"
+
+		} catch (e) {
+			// 어플리케이션 설치 안 되어있음
+			var android_url = "https://market.android.com/details?id=net.lotterentacar.manager";
+			location.href = android_url;
+		}
+	}
+	if("ios" == OSName){
+		var ios_url = "https://apps.apple.com/kr/app/quik/id1164367839";
+		location.href = ios_url;
+	}
+}
+
+
+/* SNS 공유하기 */
+function commonSnsAction(type){
+
+	if(type == "N"){ // 네이버 블로그 공유하기
+		var title = encodeURI($("title").html());
+		var url   = encodeURI(window.document.location.href);
+		var shareURL = "https://share.naver.com/web/shareView?url=" + url + "&title=" + title;
+		window.open(shareURL,'_blank')
+	}else if(type == "F"){ // 페이스북 공유하기
+		var url   = encodeURI(window.document.location.href);
+		var shareURL = "http://www.facebook.com/sharer/sharer.php?u=" + url;
+		window.open(shareURL,'_blank')
+	}else if(type == "K"){ // 카카오톡 공유하기
+
+	}else if(type == "KS"){ // 카카오 스토리
+		var url   = encodeURI(window.document.location.href);
+		var shareURL = "https://story.kakao.com/share?url=" + url;
+		window.open(shareURL,'_blank')
+	}else if(type == "T"){ //  트워터 공유하기
+		var url   = encodeURI(window.document.location.href);
+		var shareURL = "https://twitter.com/share?url=" + url;
+		window.open(shareURL,'_blank')
+	}else if(type == "SMS"){
+		var body   = encodeURI(window.document.location.href);
+		window.location.href = "sms:"+(isMobileIOS() ?'&':'?')+"body="+body;
+	}
+
+}
+
+/* 링크 복사하기 */
+function copyUrlAction(){
+	var url = '';
+	var textarea = document.createElement("textarea");
+	document.body.appendChild(textarea);
+	url = window.document.location.href;
+	textarea.value = url;
+	textarea.select();
+	document.execCommand("copy");
+	document.body.removeChild(textarea);
+	commonValidMessage("commonSingleAlert","링크가 복사되었습니다.",null,null);
+}
+
+/**
+ * 숫자 3자리마다 ,(콤마) 붙여주기 : format (#,##0)
+ * ex : numberFormat(1000)
+ * => 1,000
+ */
+function numberFormat(data, type) {
+	if(data != "" && typeof data != "undefined"){
+		if(type=="int"){
+			return data.toString().replace(/\B(?=(\d{3})+(?!\d))/g,",").split(".")[0];
+		}else{
+			return data.toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");
+		}
+	}else{
+		return 0;
+	}
+}
+/* 자동 하이픈 추가 하기  */
+function autoHypenNo(arr, str){
+	str = str.replace(/[^0-9]/g, '');
+	var delimiter = '-';
+	var result = '';
+	var fromIndex = 0;
+	var strlen = str.length;
+	for(var i=0; i<arr.length; i++) {
+		var currentStrCnt = arr[i];
+		result += str.substr(fromIndex, currentStrCnt);
+		fromIndex += currentStrCnt;
+		if(strlen <= fromIndex) {
+			result += str.substr(fromIndex, strlen);
+			break;
+		}
+		if(i<arr.length-1) {
+			result += delimiter;
+		}
+	}
+	return result;
+}
+/**
+ *  String format 타입 설정하여 설정한 타입에 맞게 문자열 반환
+ *  ex : "({0}) {1} {2}".format(arg1,arg2,arg3)
+ *  => (arg1) arg2 arg3
+ */
+String.prototype.format = function() {
+	var formatted = this;
+	for( var arg in arguments ) {
+		formatted = formatted.replace("{" + arg + "}", arguments[arg]);
+	}
+	return formatted;
+};
+
+
+function testMessage(){
+	alert("테스트 alert");
+}
+
+/* 비밀번호 정규식 체크 */
+//※ 영문 대문자, 영문 소문자, 숫자, 특수문자 중
+//- 2개 조합 시 10자리 이상
+//- 3개 이상 조합 시 8자리 이상
+
+
+function passwordCheck(password){
+	//var regExpPw  = new RegExp('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&])[A-Za-z\d$@$!%*?&]{8,10}$/');
+	var regExpPw = /^(?=.*[a-zA-z])(?=.*[0-9])(?=.*[$`~!@$!%*#^?&\\(\\)\-_=+]).{8,10}$/;
+
+	if(regExpPw.test(password)){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function tagReverseConvert(text){
+	var returntext = text.replaceAll("&amp;","\&").replaceAll("& lt;","\<").replaceAll("&lt;","\<").replaceAll("& gt;","\>").replaceAll("&gt;","\>")
+		.replaceAll("& #39;", "\'").replaceAll("&#39;", "\'").replaceAll("& #40;","\(").replaceAll("&#40;","\(").replaceAll("& #41;","\)").replaceAll("&#41;","\)")
+		.replaceAll("& nbsp;", " ").replaceAll("&nbsp;", " ").replaceAll("& quot;", "\"").replaceAll("&quot;", "\"").replaceAll("& iexcl;", "\i").replaceAll("&iexcl;", "\i");
+//	value = value.replaceAll("eval\\((.*)\\)", "");
+//	value = value.replaceAll("[\\\"\\\'][\\s]*javascript:(.*)[\\\"\\\']", "\"\"");
+//	value = value.replaceAll("script", "");
+	return returntext;
+}
+
+/* 캡차 관련 JS 추가 - 2023-02-21 */
+
+//jQuery plugin code
+$.fn.captcha = function(){
+	var captcha = this;
+	captcha.attr('captcha', false);
+	captcha.find('.captcha').html('<div class="check"> </div> <span style="font-weight: bold;">로봇이 아닙니다 (Captcha)</span>');
+
+	// Verify box clicked
+	captcha.find('.captcha .check').on('click', function(){
+		captcha.attr('captcha', true);
+		if(/Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)){
+			captcha.find('.captcha .check').html('<div class="wrapper"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 98.5 98.5" enable-background="new 0 0 98.5 98.5" xml:space="preserve"><path class="checkmark" fill="none" stroke-width="8" stroke-miterlimit="10" d="M81.7,17.8C73.5,9.3,62,4,49.2,4 C24.3,4,4,24.3,4,49.2s20.3,45.2,45.2,45.2s45.2-20.3,45.2-45.2c0-8.6-2.4-16.6-6.5-23.4l0,0L45.6,68.2L24.7,47.3"/></svg></div>');
+		}else{
+			captcha.find('.captcha .check').css('background-color', '#336604');
+		}
+	});
+
+	//Form Submitted
+	captcha.on('submit', function(e){
+		if(captcha.attr('captcha') == 'false'){
+			e.preventDefault();
+		}
+	});
+}
+
+//Function for verifying if captcha has been clicked
+function verifyCaptcha(formId){
+	if($(formId).attr('captcha') == 'true'){
+		return true;
+	}
+	return false;
+}

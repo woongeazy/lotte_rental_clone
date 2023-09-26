@@ -1,0 +1,812 @@
+var biz = biz || {}
+biz = {
+
+	info: {
+		saveId: [false, true, true]
+		, autoLogin: [false, true, true]
+	}
+	, init: function(data){
+		// sso 관련 로그 값 초기화
+		try{
+			var tmp = JSON.parse(data.clientAkInfo);
+			if(tmp.domain.indexOf('testmembers') > -1 || biz.getParameterValue('elqjrld') == 'o') _isDebug = true;
+		} catch(e) {
+		}
+
+		sso.log("init params", data);
+
+		if(data.loginStatus && data.goUrl) {
+			location.href = data.goUrl;
+		}
+
+		var platform = localStorage.getItem('platform') || '';
+		var isNative = (platform) ? true : false;
+
+		if(isNative) {
+			data.channelCd = '2'
+		}
+
+		// 파라메터로 전달받은 rnwTkn 값
+		if(data.rnwTkn) {
+			sso.getData("rnwTkn", data.rnwTkn);
+		}
+
+		// SSO 로그인 or  자동로그인 토큰 파라메터로 전달 시 함께 전달하는 returnUrl (내부에서 goUrl 변수명으로 사용함)
+		if((data.rnwTkn || data.ssoTkn) && data.goUrl) {
+			sso.getData("goUrl", data.goUrl);
+		}
+
+		// 로그인 후 리다이렉트 처리 위한 값 셋팅(mb)
+		if(location.pathname == '/login.do' && data.goUrl) {
+			sso.getData("goUrl", data.goUrl);
+		}
+
+		// # sso 라이브러리 초기화 하지 않는 케이스
+		// - clientAkInfo 값 없는 경우
+		if(data.clientAkInfo != '') {
+			// 일반 로그인이던, 멤버스 로그인이던 로그인 상태의 경우 라이브러리 초기화
+			var initOption = {
+				ccoSiteNo: data.siteNo
+				, clntAkInf: data.clientAkInfo //클라이언트요청정보 <서버에서>
+				, acesTkn: data.accessToken //접근토큰. 로그인후에 필수적으로 입력
+				, channel: data.channelCd // 사용자 환경 구분
+				, isLoggedIn: data.loginStatus
+			}
+
+			// # 로그인 처리 우선순위
+			// 1. SSO 로그인
+			// 2. 자동로그인
+//			if(!data.loginStatus) {
+//				// 2019-07-30 sj.kim 오토매니져 모바일 로그인 인증처리 관련하여 요청사항..
+//				// pc : 기존과 동일
+//				// mobile(pc/app): sso 로그인, 자동로그인 등을 로그인 페이지에서만 실행
+//				if(data.channelCd == '0' || (data.channelCd != '0' && location.pathname == '/login.do')|| (data.channelCd != '0' && location.pathname == '/main.do')) {	// pc 이거나, mobile 이면서 로그인 페이지일 경우
+//					initOption.ssoLogin = {
+//						akDta: {
+//							ssoTkn: data.ssoTkn //파라메터로 전달받은 ssoTkn 값
+//						}
+//						, callback: function(responseData){
+//							sso.log("멤버스 SSO 로그인 콜백", responseData);
+//							// sso 로그인 성공
+//							if(responseData.rspC == '00') {
+//								// 자동로그인 토큰 저장
+//								biz.handler.saveAutoToken(responseData.rnwTkn);
+//								biz.login(responseData, sso.get('channel'));
+//							} else {
+//								// 앱에서의 자동로그인 처리: 파라메터로 받은 토큰 혹은 쿠키에 토큰이 있는 경우 실행
+//								// 우선순위: 1. 파라메터, 2. 쿠키값
+//								var paramRenewToken = sso.getData("rnwTkn") || ''; // 1.파라미터로 받은 토큰값이 있거나(앱 자동로그인)
+//								var isAutoLogin = localStorage.getItem('autoLoginYn') == 'Y' && localStorage.getItem('rnwTkn') ? true : false; // 2. 쿠키에 토큰값이 올려져 있다면 자동 로그인 진행(모바일웹 자동로그인)
+//								sso.log("현재 자동로그인 토큰값: ", paramRenewToken || localStorage.getItem('rnwTkn') || '');
+//
+//								if(paramRenewToken || isAutoLogin) {
+//									sso.autoLogin({
+//										akDta: {
+//											rnwTkn: paramRenewToken || localStorage.getItem('rnwTkn')
+//										}
+//										, callback: function(responseData){
+//											sso.log("멤버스 자동로그인 콜백", responseData);
+//
+//											if ('00' == responseData.rspC) {
+//												sso.log("멤버스 자동로그인 성공", responseData.rspC);
+//												// 로그인 성공 후처리: 세션 처리
+//												biz.login(responseData, sso.get('channel'));
+//											} else {
+//												sso.log("멤버스 자동로그인 실패");
+//												biz.handler.invalidateLoginData();
+//												// 자동로그인의 경우 알럿 필요 없음
+//												// 자동로그인토큰 삭제 처리
+//												if(sso.get('channel') != '2') {
+//													biz.handler.invalidateAutoTokenForNotNative();
+//
+//													// pc의 로그인 레이어 제어
+//													if(!sso.isMobile()) {
+//														// 자동로그인 체크 처리
+//														biz.pageInit();
+//													} else {
+//														if(location.pathname == '/login.do') {
+//															biz.pageInit();
+//														}
+//													}
+//
+//												} else {
+//													biz.handler.invalidateAutoTokenForOnlyNative('fail', sso.getData("goUrl"));
+//												}
+//											}
+//										}
+//									})
+//								} else {
+//									// pc의 로그인 레이어 제어
+//									if(!sso.isMobile()) {
+//										biz.pageInit();
+//									} else {
+//										if(location.pathname == '/login.do') {
+//											biz.pageInit();
+//										}
+//									}
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+
+			sso.init(initOption);
+		} else {
+			// 내부 backend 문제?
+			// clientAkInfo 없을때 >> 멤버스나 서버 비정상 상태임. 안내처리 필요할까?
+			sso.log('clientAkInfo 값 없어서 라이브러리 초기화 실패');
+		}
+
+	}
+	// 로그인 페이지에서 호출되는 init 함수
+	, pageInit: function() {
+		sso.log('로그인 페이지 이벤트 초기화');
+	}
+	, handler: {
+		// PC 자동로그인 없음, 토큰값 저장만 함, 실제 자동로그인 여부는 기존 로직 대로 처리함
+		saveAutoToken: function(token) {
+			if(sso.isMobile()) {
+				token = token || '';
+				if(!token) {
+					localStorage.removeItem('rnwTkn');
+				} else {
+					localStorage.setItem('rnwTkn', token);
+				}
+			}
+		}
+		// 1. 로그인 실패시 호출(자동로그인, 일반 로그인)
+		// sso 로그인시에는 자동로그인 혹은 id 로그인과는 별개여서 상관 없음
+		, invalidateAutoTokenForNotNative: function() {
+			localStorage.removeItem('rnwTkn');
+		}
+		// 네이티브에서는 동작방식이 달라서 웹(pc/mb)이랑 호출 시점이 달라서 분리함, 전달하는 returnUrl 로 페이지 이동됨
+		, invalidateAutoTokenForOnlyNative: function(type, returnUrl){
+			type = type || 'logout';
+			if(type == 'fail') {
+				// FIXME: sjkim - 오토매니져 ios/android 둘다 비번 틀렸을 때 에러나서 임시적으로 웹에서 처리하게 수정함
+				localStorage.removeItem('rnwTkn');
+				location.reload();
+			} else {
+				location.href = type == 'logout' ? "toapp:::loginstatus:::out:::" : "toapp:::loginstatus:::400:::";
+
+				setTimeout(function(){
+					returnUrl = returnUrl || location.pathname;
+					var $form = $('<form></form>');
+					 $form.attr('action', returnUrl);
+					 $form.attr('method', 'post');
+					 $form.attr('target', '_self');
+					 $form.appendTo('body');
+					 $form.submit();
+				}, 300);
+			}
+		}
+		// 직접 로그아웃 버튼을 호출할 때가 아닌, 멤버스 연계 실패 or 로그인 세션처리 실패시 호출되는 함수
+		, invalidateLoginData: function() {
+			// lpoint 로그인 실패하고 후처리
+			if(sso.isMobile()) {
+				var lpid = ""
+				try{
+					/*lpid = Decrypt(localStorage.getItem('autoLpid'), "loginid", 128);
+					lpid = decodeURIComponent(lpid);
+					var param = {
+						userId : lpid
+					}
+
+					param = JSON.stringify(param);
+					postProcessing(true,'/deletePushToken.json', param, function(data){
+						sso.log(data.type);
+						localStorage.clear();
+					}, null );*/
+
+					biz.handler.saveAutoToken(); // 자동로그인 토큰 지우기
+				} catch (e) {
+					sso.log(e);
+				}
+
+				sso.getData("goUrl", ''); // 자동로그인 호출시 전달한 goUrl(returnUrl) 지우기
+			} else {
+				localStorage.removeItem("atid");
+				localStorage.removeItem("atpw");
+				localStorage.removeItem("lpid");
+				localStorage.removeItem("lppw");
+			}
+
+		}
+		, findId: function(returnUrl) {	// 아이디 찾기
+			var param = {
+				akUrl: sso.getExUrl('FIND_ID')
+			}
+			if(returnUrl) {
+				param.returnUrl = returnUrl
+			}
+			sso.callScreen(param)
+		}
+		, findPw: function(returnUrl) { // 비밀번호 찾기
+			var param = {
+				akUrl: sso.getExUrl('FIND_PASSWORD')
+			}
+			if(returnUrl) {
+				param.returnUrl = returnUrl
+			}
+			sso.callScreen(param)
+		}
+		, join: function(returnUrl) { // 회원가입
+			var param = {
+				akUrl: sso.getExUrl('JOIN_MEMBER')
+			}
+			if(returnUrl) {
+				param.returnUrl = returnUrl
+			}
+			sso.callScreen(param)
+		}
+		, changePw: function(returnUrl) { // 비밀번호 변경: 로그인 후 호출 가능
+			var param = {
+				akUrl: sso.getExUrl('CHANGE_PASSWORD')
+			}
+			if(returnUrl) {
+				param.returnUrl = returnUrl
+			}
+			sso.callScreen(param)
+		}
+		, changeInfo: function(returnUrl) { // 회원 정보 변경: 로그인 후 호출 가능
+			var param = {
+				akUrl: sso.getExUrl('CHANGE_INFO')
+			}
+			if(returnUrl) {
+				param.returnUrl = returnUrl
+			}
+			sso.callScreen(param)
+		}
+		, leave: function(returnUrl) { // 회원 탈퇴 추가: 로그인 후 호출 가능
+			var param = {
+				akUrl: sso.getExUrl('LEAVE_MEMBER')
+			}
+			if(returnUrl) {
+				param.returnUrl = returnUrl
+			}
+			sso.callScreen(param)
+		}
+		, sleepClears: function(data) {	// 휴면 해제 처리: 로그인 후처리 정보 처리 내용에 따라 호출 가능
+			var url = sso.getExUrl('SLEEP_CLEAR');
+			sso.callScreen({
+				akUrl: url
+				, key: "SLEEP_CLEAR"
+			})
+		}
+		, conversionMbr : function(param) {	// LPoint 회원 전환
+			param = param || {}
+			param.akUrl= sso.getExUrl('CONVERSION_MEMBER')
+			sso.callScreen(param)
+		}
+		, callLogin: function() {
+//			debugger
+			var $btn = $(this);
+			var calledFromTop = $btn.attr('id') == 'topLpointLogin' ? true : false;
+
+			var $id, $pw
+
+			$id = $("#loginid");
+			$pw = $("#loginpwd");
+
+			var id = $id.val() || '';
+			var pw = $pw.val() || '';
+
+			// 공백 제거 후 유효성 체크
+			id = id.replace(/(\s*)/g, '');
+			pw = pw.replace(/(\s*)/g, '');
+
+			if(id == '') {
+				commonValidLoginMessage("아이디를 입력해 주세요");
+				$id.focus();
+				return;
+			}
+			if(pw == '') {
+				commonValidLoginMessage("비밀번호를 입력해 주세요");
+				$pw.focus();
+				return;
+			}
+
+
+		/*	if(typeof customManager.ssoLoginPreProcess === 'function') {
+				// 자동로그인 여부값(실제값은 로그인 후 받아와서 저장처리됨), ID 저장여부에 따른 처리값 등등을 처리함
+				customManager.ssoLoginPreProcess();
+			}
+	 	*/
+
+			sso.login({
+				akDta: {
+					onlId: id
+					, cstPswd: pw
+				}
+				, callback: function(responseData){
+					sso.log("멤버스 로그인 콜백", responseData);
+
+					if ('00' == responseData.rspC) {
+						sso.log("멤버스 로그인 성공");
+						localStorage.setItem("login","S");
+			            /* 비밀번호 변경 캠페인 대상자 */
+						if(responseData.rspDtc == '401') {
+							sso.reInit(responseData);
+							sso.callScreen({
+						        akUrl: "/view/login/login_04_001"
+						      , rturUrl :window.location.href
+						      , rturUrlCaloMethd: 'GET'    //제휴사 리턴URL호출메소드
+						    })
+
+						} else {
+							// 자동로그인 토큰 저장
+							biz.handler.saveAutoToken(responseData.rnwTkn);
+							// 로그인 성공 후처리
+							biz.login(responseData, sso.get('channel'));
+						}
+
+					} else {
+						sso.log("멤버스 로그인 실패");
+						var msg = responseData.rspMsgCn || '';
+						commonValidLoginMessage(msg);
+
+						// 제휴사 약관동의 누락된 사람 약관동의 화면으로 이동처리
+						if(responseData.rspDtc == '419' || responseData.rspDtc == '420') {
+							sso.callScreen({
+								akUrl: sso.getExUrl('DUAL_MEMBER_TERMS_AGREE')
+								, akDta: {
+									ssoTkn: responseData.ssoTkn
+									, onlCstTpC: responseData.onlCstTpC
+									, frnYn: responseData.frnYn
+								}
+							})
+						} else if(responseData.rspDtc == '404') {
+					          /* 부정로그인 대상자 */
+					          sso.callScreen({
+					                    akUrl: sso.getExUrl('INVALID_LOGIN_CLEAR')
+					                  , akDta: {
+					                        ssoTkn: responseData.ssoTkn
+					                      , onlCstTpC: responseData.onlCstTpC
+					                    }
+					                })
+					    } else if (responseData.rspDtc == '405'){
+					          /* 비밀번호 오류횟수 5회 초과 */
+					          sso.callScreen({
+					              akUrl: sso.getExUrl('FIND_PASSWORD')
+					                })
+					    } else if (responseData.rspDtc == '406' || responseData.rspDtc == '407' || responseData.rspDtc == '408') {
+					          sso.callScreen({
+					                    akUrl: sso.getExUrl('SLEEP_CLEAR')
+					                  , akDta: {
+					                        ssoTkn: responseData.ssoTkn
+					                      , onlCstTpC: responseData.onlCstTpC
+					                      , rspDtc: responseData.rspDtc
+					                    }
+					                })
+					      } else {
+							biz.handler.invalidateLoginData();
+							if(sso.get('channel') == '2') {
+								biz.handler.invalidateAutoTokenForOnlyNative('fail', sso.getData("goUrl"));
+							}
+						}
+					}
+				}
+			});
+		}
+		, socialLogin: function(type, accessToken) {
+//			debugger
+			// 로그인 실패등의 케이스에서는 invalidateLoginData 호출하지만, 정상 로그아웃처리시에는 호출하지 않음. AS-IS  동일
+
+			// 제휴사 구분코드(제휴사인 경우 biz.partnerLogin() 함수 호출한다.)
+//			var partnerYn = location.href.indexOf(_PARTNER_URI) > -1 ? "Y" : "N";
+
+			//loading show
+//			_loading.show();
+
+			sso.socialLogin({
+				akDta : {
+					copAccDc: type,	//social type
+					copTkn: accessToken			//accessToken
+				}
+			    ,akUrl : "/exBiz/login/sociLogin_01_001"
+				,callback : function(responseData) {
+					sso.log("멤버스 로그인 콜백", responseData);
+
+					//loading hide
+//					_loading.hide();
+
+					if ('00' == responseData.rspC) {
+
+						//reinit for odm only
+						sso.reInit(responseData);
+//						debugger
+						console.log("channel=" + sso.get('channel'));
+						biz.login(responseData, sso.get('channel'));
+					} else {
+						// alert(responseData.rspMsgCn);
+
+						commonValidLoginMessage(responseData.rspMsgCn) ; //, 'toast', 'align_lf', "toast_warnning");
+
+						// 소셜계정등록
+						if(responseData.rspDtc == '423' ) {
+							try{
+								sso.callScreen({
+									akUrl : "/exView/login/socialReg_01_001",
+									akDta : {
+										copAccDc : type,
+										copTkn : accessToken
+									}
+								});
+							}catch (e) {
+								sso.log(e);
+							}
+
+						} else if(responseData.rspDtc == '419' || responseData.rspDtc == '420') {
+							sso.callScreen({
+								akUrl: sso.getExUrl('DUAL_MEMBER_TERMS_AGREE')
+								, akDta: {
+									ssoTkn: responseData.ssoTkn
+									, onlCstTpC: responseData.onlCstTpC
+									, frnYn: responseData.frnYn
+								}
+							})
+						} else if(responseData.rspDtc == '404') {
+					          /* 부정로그인 대상자 */
+					          sso.callScreen({
+					                    akUrl: sso.getExUrl('INVALID_LOGIN_CLEAR')
+					                  , akDta: {
+					                        ssoTkn: responseData.ssoTkn
+					                      , onlCstTpC: responseData.onlCstTpC
+					                    }
+					                })
+					    } else if (responseData.rspDtc == '405'){
+					          /* 비밀번호 오류횟수 5회 초과 */
+					          sso.callScreen({
+					              akUrl: sso.getExUrl('FIND_PASSWORD')
+					                })
+					    } else if (responseData.rspDtc == '406' || responseData.rspDtc == '407' || responseData.rspDtc == '408') {
+					          sso.callScreen({
+					                    akUrl: sso.getExUrl('SLEEP_CLEAR')
+					                  , akDta: {
+					                        ssoTkn: responseData.ssoTkn
+					                      , onlCstTpC: responseData.onlCstTpC
+					                      , rspDtc: responseData.rspDtc
+					                    }
+					                })
+					    } else {
+							biz.handler.invalidateLoginData();
+							if(sso.get('channel') == '2') {
+								biz.handler.invalidateAutoTokenForOnlyNative('fail', sso.getData("goUrl"));
+							}
+						}
+					}
+
+				}
+			});
+		}
+		, callLogout: function() {
+			// 로그인 실패등의 케이스에서는 invalidateLoginData 호출하지만, 정상 로그아웃처리시에는 호출하지 않음. AS-IS  동일
+			if(sso.isMembersLogin()) {
+				sso.log("로그아웃-sso")
+				sso.logout({
+					callback: function() {
+						sso.log("로그아웃-sso-콜백임")
+						biz.logout()
+					}
+
+				});
+			} else {
+				sso.log("로그아웃-일반")
+				biz.logout();
+			}
+		}
+	}
+	, login: function(response, channel){
+//		debugger
+		if (channel == 'undefined' || channel == '' || channel == 'null' || channel == null){
+			channel = sso.get('channel');
+		}
+
+		console.log("channel=" + channel);
+		console.log("response.acesTkn=" + response.acesTkn);
+
+		var params = {
+			"acesTkn": response.acesTkn // api 결과로 전달받은 값
+			, "channel": channel
+		}
+
+		var success = function(responseData){
+//			debugger
+			sso.log("로그인 세션처리 완료 >>> ",  responseData)
+			var data = responseData || {};
+			var paramMap = data.paramMap || {};
+
+			biz.ajaxFail.fn = null;	//
+			sso.log("로그인 세션처리data.result >>> ",  data.result)
+			if(data.result == 'success') {
+				sso.log("로그인 세션처리 완료 > ",  responseData)
+
+				var retUrl;
+				if(sso.isMobile()) {
+					retUrl = sso.getData('goUrl') || data.returnUrl || '/main.do';		// data.returnUrl 은 로그인 처리 로직상에서 내려주는 값임(서버단..)
+				} else {
+					retUrl = data.returnUrl || location.href || '/main.do';
+				}
+				sso.log("로그인 channel >>> ",  channel)
+				if(channel == '2') {	// app
+					// 자동로그인 토큰 저장
+					var callProtocol;
+
+					if($("#Autologin1").prop("checked")) {
+						callProtocol = "toapp:::loginstatus:::200:::Y:::" + encodeURIComponent(response.ssoTkn) + ":::" + encodeURIComponent(response.rnwTkn);
+					} else {
+						callProtocol = "toapp:::loginstatus:::200:::N:::" + encodeURIComponent(response.ssoTkn) + ":::" + '';
+					}
+					sso.log("로그인 callProtocol >>> ",  callProtocol)
+
+					// 결과토큰 전달처리
+					location.href = callProtocol;
+
+					// 페이지 이동
+
+					setTimeout(function() {
+						var $form = $('<form></form>');
+						 $form.attr('action', retUrl);
+						 $form.attr('method', 'post');
+						 $form.attr('target', '_self');
+						 $form.appendTo('body');
+						 $form.submit();
+					}, 300);
+
+				} else {	// not app
+					// return url setting
+					location.href = retUrl;
+				}
+			} else if(data.serviceUseYn == 'N'){
+				localStorage.setItem("login","S");
+        		serviceUseYnPopOpen();
+			}else if(data.bizManageYn == 'Y'){ // 관리자인경우 SMS 인증팝업 호출
+
+				var lpointBizMangerId = data.lpointBizMangerId || '';
+				var lpointOnlCno = data.lpointOnlCno || '';
+
+				var isOk = lpointBizMangerId != '' && lpointOnlCno != '';
+				if(isOk){
+					sso.log("관리자 계정 후처리 함수 호출함 > ");
+					var obj = {
+						id: lpointBizMangerId
+						, onlCno:  lpointOnlCno
+						, accessToken: response.acesTkn
+						, pwUpdateYn : data.pwUpdateYn
+					}
+					adminSsoLoginSetting(obj);
+				} else {
+					sso.log("sso 연동 강제 로그아웃 호출 처리 > ");
+					biz.invalidateSsoLogin(response.acesTkn);
+				}
+
+			} else {
+				// sso 로그아웃 호출 처리
+				biz.handler.invalidateLoginData();
+				biz.invalidateSsoLogin(response.acesTkn)
+			}
+		}
+
+		var fail = function(){
+			biz.invalidateSsoLogin(response.acesTkn);
+		}
+
+		biz.ajaxFail.fn = function(){
+			biz.invalidateSsoLogin(response.acesTkn);
+		}
+
+		// 사파리에서 스코프 때문에 스크립트 에러나는거 같아서 수정함.. sj.kim
+		biz.ajaxSuccess.fn = success;
+
+		postProcessing(true,"/lpoint/api/login.json", JSON.stringify(params), biz.ajaxSuccess.call, biz.ajaxFail.call);
+	}
+	, invalidateSsoLogin: function(acesTkn) {
+		// sso 로그아웃 호출 처리: 멤버스 로그인은 성공 + 서버단 로직에서 로그인 처리 실패시
+		if(sso.isMembers()) {
+			sso.reInit({acesTkn: acesTkn})
+			sso.logout({
+				callback: function() {
+					// sso 로그아웃 호출 처리
+					biz.handler.invalidateLoginData();
+//					if(sso.isMobile()) {
+						// 자동로그인토큰 삭제 처리
+						if(sso.get('channel') != '2') {
+							biz.handler.invalidateAutoTokenForNotNative();
+							location.href = '/main.do';
+						} else {
+							biz.handler.invalidateAutoTokenForOnlyNative('fail', '/main.do');
+						}
+//					}
+				}
+			});
+		}
+	}
+	, logout: function(){
+		sso.log("로그아웃-sso-콜백임-세션끊기임")
+		var success = function(data){
+
+			if(data == 'success') {
+				// 자동로그인토큰 삭제 처리
+				localStorage.setItem("autoLoginYn","N");
+				if(sso.get('channel') != '2') {
+					sso.log('로그아웃 세션끊기 성공', data)
+					location.href = "/main.do";
+				} else {
+					biz.handler.invalidateAutoTokenForOnlyNative('logout', '/main.do');
+				}
+			}
+		}
+
+		postProcessing(true,"/lpoint/api/logout.json", null, success, null);
+	}
+	, cookie: {
+		get: function(name){
+			var nameOfCookie = name + "=";
+			var x = 0;
+			while(x <= document.cookie.length){
+				var y = (x + nameOfCookie.length);
+				if(document.cookie.substring(x, y) == nameOfCookie){
+					if((endOfCookie=document.cookie.indexOf( ";", y )) == -1 ) {
+						endOfCookie = document.cookie.length;
+					}
+					return unescape( document.cookie.substring( y, endOfCookie ) );
+				}
+				x = document.cookie.indexOf( " ", x ) + 1;
+				if (x == 0) break;
+			}
+			return "";
+		}
+		, set: function(name, value, expiresDays){
+			var todayDate = new Date();
+			todayDate.setDate( todayDate.getDate() + expiresDays );
+			document.cookie = name + "=" + escape( value ) + "; path=/; expires=" + todayDate.toGMTString();
+		}
+	}
+	// get parameters 에서 특정 key 에 대한 값 조회
+	, getToken: function(key) {
+		var name = key || '';
+		var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+			results = regex.exec(location.search);
+
+		return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+	}
+	// 아직 사용 안함... 쓸데 없는거 같음..
+	// 초기 파라메터로 전달받은 SSO로그인, 자동로그인, goUrl 값 clear
+	, clearTokens: function(){
+		sso.getData("rnwTkn", "");
+		sso.getData("goUrl", "");
+	}
+	/*
+		권한 필요 없는 페이지로 이동시: goUrl = domain + uri path
+		ex) https://www.lotterentacar.net/kor/odm/odmMain.do?mnCd=FN020108
+		앱 안에서는 새창여부 관계없이 무조건 외부 브라우저 띄움
+	*/
+	, goWithNoAuth: function(goUrl, newWindowYn){
+		newWindowYn = newWindowYn || 'Y';
+		if(sso.isMembersLogin()) {
+			sso.getToken({
+				callback:function(responseData) {
+					var url;
+					if(responseData) {
+						url = goUrl + (goUrl.indexOf("?") != -1 ? "&" : "?") + "ssoTkn=" + encodeURIComponent(responseData);
+					} else {
+						url = goUrl;
+					}
+
+					if(sso.get('channel') == '2') {
+						location.href = "toapp:::appviewmove:::openweb:::" +encodeURIComponent(url);
+					} else {
+						if(newWindowYn == 'Y') {	// 새창여부
+							window.open(url);
+						} else {
+							location.href = url;
+						}
+					}
+				}
+			})
+		} else {
+
+			if(sso.get('channel') == '2') {
+				location.href = "toapp:::appviewmove:::openweb:::" +encodeURIComponent(goUrl);
+			} else {
+				if(newWindowYn == 'Y') {	// 새창여부
+					window.open(goUrl);
+				} else {
+					location.href = goUrl;
+				}
+			}
+		}
+	}
+	/*
+		권한 필요한 페이지로 이동시: siteMain, goUrl 분리해서 파라메터 전달
+		ex) siteMain: https://www.lotterentacar.net/kor/main/index.do
+			->  굳이 메인일 필요는 없지만 예외케이스 아닌 경우 메인으로 통일
+				sso 연동처리 후 goUrl 로 redirect 처리 됨
+			goUrl: https://www.lotterentacar.net/kor/odm/odmMain.do?mnCd=FN020108
+		앱 안에서는 새창여부 관계없이 무조건 외부 브라우저 띄움
+	*/
+	, goWithAuth: function(siteMain, goUrl, newWindowYn) {
+		newWindowYn = newWindowYn || 'Y';
+		if(sso.isMembersLogin()) {
+			sso.getToken({
+				callback:function(responseData) {
+					var url;
+					if(responseData) {	// sso 토큰 존재여부
+						url = siteMain + "?ssoTkn=" + encodeURIComponent(responseData) + "&returnurl=" + encodeURIComponent(goUrl);
+					} else {
+						url = goUrl;
+					}
+
+					if(sso.get('channel') == '2') {
+						location.href = "toapp:::appviewmove:::openweb:::" +encodeURIComponent(url);
+					} else {
+						if(newWindowYn == 'Y') {	// 새창여부
+							window.open(url);
+						} else {
+							location.href = url;
+						}
+					}
+				}
+			})
+		} else {
+			if(sso.get('channel') == '2') {
+				location.href = "toapp:::appviewmove:::openweb:::" +encodeURIComponent(goUrl);
+			} else {
+				if(newWindowYn == 'Y') {	// 새창여부
+					window.open(goUrl);
+				} else {
+					location.href = goUrl;
+				}
+			}
+		}
+	}
+	// app to app 호출 케이스
+	, callAppToApp: function(schema, goUrl) {
+		if(sso.get('channel') == '2') {
+			schema = schema || ''
+			goUrl = goUrl || '';
+			if(schema) {
+				sso.getToken({
+					callback:function(responseData) {
+						var moveUrl = schema + "://home?ssoTkn=" + responseData + "&returnurl=" + goUrl
+						location.href = "toapp:::appViewMove:::AppToApp:::" + encodeURIComponent(moveUrl);
+
+						// 페이지 이동
+						setTimeout(function() {
+							var $form = $('<form></form>');
+							 $form.attr('action', location.pathname);
+							 $form.attr('method', 'post');
+							 $form.attr('target', '_self');
+							 $form.appendTo('body');
+							 $form.submit();
+						}, 300);
+					}
+				})
+			}
+		}
+	}
+	// request parameter 값 조회
+	, getParameterValue: function(name){
+		if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
+		return decodeURIComponent(name[1]);
+	}
+}
+
+biz.ajaxFail = {
+	fn: null
+	, call: function(){
+		if(typeof(biz.ajaxFail.fn) === 'function') {
+			biz.ajaxFail.fn();
+			commonValidLoginMessage('서버에서 처리중 에러가 발생하였습니다. 관리자에게 문의 부탁드립니다.');
+		}
+	}
+}
+biz.ajaxSuccess = {
+	fn: null
+	, call: function(data){
+		if(typeof(biz.ajaxSuccess.fn) === 'function') {
+			biz.ajaxSuccess.fn(data);
+		}
+	}
+}

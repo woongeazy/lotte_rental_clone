@@ -1,0 +1,177 @@
+@charset "utf-8";
+
+.material-symbols-outlined {
+font-variation-settings:
+'FILL' 0,
+'wght' 400,
+'GRAD' 0,
+'opsz' 48
+}
+a, a:link {
+    color: inherit;
+    text-decoration: none;
+}
+
+body {
+    font-family: 'Noto Sans KR', 'Poppins';
+    background: #f6f6f6;
+}
+/* ------------------------------------header-------------------------------------- */
+.header-bg {
+    padding: 1rem;
+}
+header {
+    width: 1400px;
+    margin: 0 auto;
+}
+header img {
+    width: 150px;
+}
+header p {
+    font-size: 19.2px;
+    color: #555;
+}
+.header-btn a:nth-child(1) {
+    color: #fff;
+    background: red;
+    font-size: 11.67px;
+    font-weight: bold;
+    border-radius: 30px;
+    padding: 5px 1rem;
+}
+.header-btn a:nth-child(2) {
+    color: #004c97;
+    font-weight: bold;
+    border-left: 1px solid #555;
+    font-size: 13.856px;
+    padding-left: 1rem;
+    margin-left: 1rem;
+}
+
+/* ---------------------------------nav---------------------------------------- */
+nav {
+    background: #fff;
+    width: 100%;
+    position: absolute;
+    z-index: 1000;
+}
+.nav {
+    width: 1400px;
+    margin: 0 auto;
+}
+#gnb { /* 가로 사이즈를 정해주고 그 블록 안에서 justfy-center 해 줘야 센터됨*/
+    font-size: 1.125rem;
+    font-weight: bold;
+    width: 1200px;
+    gap: 5rem;
+    height: 80px;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+#gnb > li {
+    text-align: center;
+}
+#lnb {
+    display: none;
+    position: absolute;
+    bottom: 0;
+}
+.nav-icon span {
+    font-size: 2.5rem;
+}
+.nav-icon a:nth-child(2) {
+    margin-left: 2rem;
+}
+
+/*------------------------------------ main ------------------------------------*/
+main {
+    position: relative;
+    width: 1400px;
+    overflow: hidden;
+    margin: 0 auto;
+    border-radius: 30px;
+    top: 120px;
+}
+.carousel-text {
+    color: #fff;
+    position: absolute;
+    top: 70px;
+    left: 70px;
+}
+.carousel-text > p {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+.carousel-text > h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+.carousel-img {
+    flex: 1 1 500px; /*?*/
+}
+/* --------------------------------------service----------------------------------------------- */
+.service {
+    width: 1400px;
+    margin: 0 auto;
+    margin-top: 160px;
+}
+.service h1 {
+    font-size: 2rem;
+    font-weight: bold;
+}
+.service-box {
+    margin-top: 2rem;
+    background: #fff;
+    border-radius: 30px;
+    padding: 3rem 4rem 3rem 4rem;
+    text-align: center;
+}
+.service-box h2 {
+    font-size: 1.5rem;
+    color: red;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+.service-box p {
+    color: #666;
+    margin-bottom: 1rem;
+}
+.service-box button {
+    border-radius: 30px;
+    border: 0;
+    padding: .5rem 1rem;
+    background: #f6f6f6;
+}
+
+/* 공용 */
+.d-flex {
+    display: flex;
+}
+.flex-1 {
+    flex: 1 1 1;
+}
+.flex-2 {
+    flex: 2 2 2;
+}
+.justify-between {
+    justify-content: space-between;
+}
+.justify-center {
+    justify-content: center;
+}
+.justify-end {
+    justify-content: end;
+}
+.justify-start {
+    justify-content: start;
+}
+.align-center {
+    align-items: center;
+}
+.text-center {
+    text-align: center;
+}
+.box-sizing {
+    box-sizing: border-box;
+}

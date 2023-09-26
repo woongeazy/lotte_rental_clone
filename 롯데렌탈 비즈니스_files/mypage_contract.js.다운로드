@@ -1,0 +1,113 @@
+"use strict";
+
+$(function () {
+  // tab
+  $('.tab-button').on('click', function () {
+    var isActive = $(this).hasClass('is-active');
+    var tabIdx = $(this).index();
+    var tabData = $(this).closest('.tab').data('tab');
+
+    if (!isActive) {
+      $(this).addClass('is-active').siblings().removeClass('is-active');
+
+      if (tabData) {
+        var tabContent = '.tab-contents-box[data-tab-contents=' + tabData + ']';
+        var contentTarget = $(tabContent).find('.tab-content').eq(tabIdx);
+        contentTarget.addClass('is-show').siblings().removeClass('is-show');
+      }
+    } else {
+      return false;
+    }
+  }); // pop
+  // $(".popbtn").click(function (e) {
+  //   var _target = $(this).attr("data-layer");
+  //   $("." + _target).parent().addClass("on");
+  //   $("." + _target).addClass("on");
+  //   e.preventDefault();
+  // });
+  // $("[data-fn='lyClose'], .lyClose").click(function () {
+  //   var _layerOn_length = $(".ly-group > .on").length;
+  //   if (_layerOn_length) {
+  //     $(".ly-group > .on").removeClass("on")
+  //       .parent().removeClass("on");
+  //   } else {
+  //     $(this).parent().removeClass("on")
+  //       .parent().removeClass("on");
+  //   }
+  // });
+  // toggle
+
+  $('.toggle-cicle').on('click', function () {
+    $(this).parent().toggleClass("on");
+  });
+  $('.toggle-favo').on('click', function () {
+    $(this).parent().toggleClass("on");
+  });
+
+  $('.toggle-btn, .toggle-btn2').on('click', function () {
+    if ($(this).parent().hasClass('on')) {
+      $('.toggle').removeClass('on');
+    } else {
+      $(this).parent().addClass('on');
+    }
+  });
+
+  $('button.toggle-btn2').on('click', function () {
+    if ($(this).parent().hasClass('on')) {
+      $('.toggle').removeClass('on');
+    } else {
+      $(this).parent().addClass('on');
+    }
+  });
+
+  $('.toggle-btn3').on('click', function () {
+    if ($(this).parent().hasClass('on')) {
+      $('.toggle2').removeClass('on');
+    } else {
+      $(this).parent().addClass('on');
+    }
+  });
+  
+  $('button.toggle-btn3').on('click', function () {
+    if ($(this).parent().hasClass('on')) {
+      $('.toggle2').removeClass('on');
+    } else {
+      $(this).parent().addClass('on');
+    }
+  }); 
+  
+  // tbl list
+
+  $('.tbl-dropdown-btn').on('click', function () {
+    if ($(this).hasClass('on')) {
+      $('.tbl-dropdown-btn').removeClass('on');
+      $('.tbl-dropdown-con').slideUp();
+      return false;
+    } else {
+      $('.tbl-dropdown-btn').removeClass('on');
+      $(this).addClass('on');
+      $('.tbl-dropdown-con').slideUp();
+      var target = $(this).closest('tr');
+      target.find('.tbl-dropdown-con').slideDown('');
+    }
+  }); // check all
+
+  $("#chk-all").on('click', function () {
+    $("input[name=chk-item]").prop("checked", $(this).prop("checked"));
+
+    if ($(this).prop("checked")) {
+      $(".list-table tbody tr").addClass('checked');
+    } else {
+      $(".list-table tbody tr").removeClass('checked');
+    }
+  });
+  $("#chk-all1").on('click', function () {
+    $("input[name=chkitem]").prop("checked", $(this).prop("checked"));
+
+    if ($(this).prop("checked")) {
+      $(".list-table tbody tr").addClass('checked');
+    } else {
+      $(".list-table tbody tr").removeClass('checked');
+    }
+  });
+});
