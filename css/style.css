@@ -200,6 +200,30 @@ main {
   width: 7rem;
   padding: 10px 15px 10px 15px;
 }
+/* ------------------------------------------------footer--------------------------------------------------- */
+footer {
+    width: 1400px;
+    margin: 0 auto;
+}
+hr {
+    color: #666;
+}
+.privacy {
+    justify-content: center;
+    margin: 1rem 0 3rem 0;
+}
+.privacy li {
+    border-right: 1px solid #666;
+    margin: 0 1rem 0 0;
+    padding: 0 1rem 0 0;
+}
+.privacy li:nth-child(7) {
+    border: 0;
+}
+footer img {
+    width: 150px;
+    margin: 0 0 2rem 0;
+}
 /* 공용 */
 .bg-g {
   background: gold;
@@ -275,6 +299,15 @@ main {
 }
 .mr-3 {
   margin-right: 3rem;
+}
+.mb-1 {
+    margin-bottom: 1rem;
+}
+.mb-2 {
+    margin-bottom: 2rem;
+}
+.mb-3 {
+    margin-bottom: 3rem;
 }
 .pt-1 {
   padding-top: 1rem;
