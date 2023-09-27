@@ -179,7 +179,7 @@ main {
   box-sizing: border-box;
 }
 .qna-text {
-    display: flex;
+  display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
@@ -213,9 +213,12 @@ hr {
     margin: 1rem 0 3rem 0;
 }
 .privacy li {
-    border-right: 1px solid #666;
+    border-right: 1px solid #ddd;
     margin: 0 1rem 0 0;
-    padding: 0 1rem 0 0;
+    padding: 2px 1rem 2px 0;
+}
+.privacy li {
+
 }
 .privacy li:nth-child(7) {
     border: 0;
@@ -224,7 +227,30 @@ footer img {
     width: 150px;
     margin: 0 0 2rem 0;
 }
+.foot_menu li {
+  border-right: 1px solid #ddd;
+  margin: 0 .5rem 0 0;
+  padding: 2px .5rem 2px 0;
+}
+.foot_menu li:nth-last-child(1) {
+  border: 0;
+}
+
+
+/*-------------------------------------------- Awards------------------------------------ */
+.Awards {
+  width: 1400px;
+  margin: 0 auto;
+}
+.Awards h2 {
+
+}
+
+
 /* 공용 */
+.font-bold {
+  font-weight: bold;
+}
 .bg-g {
   background: gold;
 }
@@ -335,4 +361,8 @@ footer img {
 }
 .gap-3 {
   gap: 3rem;
+}
+.fluind {
+  max-width: 100%;
+  object-fit: cover;
 }
