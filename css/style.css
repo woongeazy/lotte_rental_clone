@@ -142,6 +142,18 @@ main {
   padding: 0.5rem 1rem;
   background: #f6f6f6;
 }
+
+/* ---------------------------------------------hot_carousel--------------------------------------------*/
+.hotitems {
+  width: 1400px;
+  margin: 0 auto;
+  
+}
+.hotitems h1 {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
 /* ---------------------------------------------rental-solution-------------------------------------------------------- */
 .rental-solution {
   width: 1400px;
@@ -243,7 +255,12 @@ footer img {
   margin: 0 auto;
 }
 .Awards h2 {
-
+ font-weight: bold;
+ color: #555;
+}
+.Awards a img {
+  width: 20px;
+  margin: 0 0 0 .5rem;
 }
 
 
