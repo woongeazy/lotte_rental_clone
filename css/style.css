@@ -11,7 +11,8 @@ a:link {
 
 body {
   font-family: "Noto Sans KR", "Poppins";
-  background: #f6f6f6;
+  /* background: #f6f6f6; */
+  background: #666666;
 }
 /* ------------------------------------header-------------------------------------- */
 .header-bg {
@@ -147,13 +148,42 @@ main {
 .hotitems {
   width: 1400px;
   margin: 0 auto;
-  
+  overflow: hidden;
 }
 .hotitems h1 {
   font-size: 2rem;
   font-weight: bold;
 }
+.hot_carousel{
+  background: white;
+  border-radius: 30px;
+}
+.hot_carousel ul li {
+  flex: 0 0 25%;
+  height: 305px;
+  overflow: hidden;
+  border-radius: 30px;
+}
+.hot_carousel ul li img {
+  /* object-fit: cover; */
+  /* flex-basis: auto; */
+}
+select {
+  background: none;
+  border: 0;
+  font-size: 1.125rem;
+  color: #313131;
+}
 
+/*--------------------------------------------- push-items ------------------------------------------------------*/
+.push-items {
+  width: 1400px;
+  margin: 0 auto;
+}
+.push-items h1 {
+  font-size: 2rem;
+  font-weight: bold;
+}
 /* ---------------------------------------------rental-solution-------------------------------------------------------- */
 .rental-solution {
   width: 1400px;
